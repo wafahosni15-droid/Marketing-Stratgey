@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archipel · Strategy OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#0D0D14;--ink2:#3A3A4A;--ink3:#7A7A9A;--ink4:#BEBEDA;
+  --paper:#F1EFF9;--surface:#FFFFFF;--surface2:#F7F5FC;
+  --line:#E5E1F0;--line2:#CEC8E0;
+  --purple:#5B2FBE;--purple-pale:#EBE4FF;--purple-mid:#7C52D4;
+  --o0:#0D0D14; /* Branding — noir */
+  --o1:#5B2FBE; --o2:#1F7BEF; --o3:#0E9F88;
+  --o4:#DB4437; --o5:#F5A623;
+  --o6:#E91E8C; --o7:#7C4DFF; --o8:#00BCD4; --o9:#43A047;
+  --t1-bg:#FFF3CD;--t1-c:#856404;--t1-bd:#FFC107;
+  --t2-bg:#D4EDDA;--t2-c:#155724;--t2-bd:#28A745;
+  --t3-bg:#CCE5FF;--t3-c:#004085;--t3-bd:#0D6EFD;
+  --t4-bg:#E2D9F3;--t4-c:#4A1D96;--t4-bd:#7C3AED;
+  --crit-bg:#FEE2E2;--crit-c:#991B1B;
+  --high-bg:#FEF3C7;--high-c:#92400E;
+  --med-bg:#D1FAE5;--med-c:#065F46;
+  --done-bg:#D1FAE5;--done-c:#065F46;
+  --prog-bg:#FEF3C7;--prog-c:#92400E;
+  --todo-bg:#F3F4F6;--todo-c:#4B5563;
+  --rail:52px;--sidebar:256px;
+}
+html,body{height:100%;overflow:hidden;background:var(--paper)}
+body{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+
+/* ── RAIL ─────────────────────────────────── */
+#rail{position:fixed;left:0;top:0;bottom:0;width:var(--rail);background:var(--ink);display:flex;flex-direction:column;align-items:center;padding:10px 0;z-index:300;gap:3px}
+.rail-logo{width:30px;height:30px;background:var(--purple);border-radius:7px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.rail-logo svg{width:16px;height:16px}
+.rail-btn{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;border:none;background:transparent;position:relative}
+.rail-btn svg{width:15px;height:15px;stroke:rgba(255,255,255,.35);fill:none;transition:stroke .15s;stroke-linecap:round;stroke-linejoin:round}
+.rail-btn:hover svg,.rail-btn.act svg{stroke:rgba(255,255,255,.95)}
+.rail-btn.act{background:rgba(255,255,255,.1)}
+.rail-tip::after{content:attr(data-tip);position:absolute;left:calc(100% + 8px);background:#1a1a2a;color:white;font-size:11px;font-weight:500;padding:4px 10px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;font-family:'DM Sans',sans-serif;border:1px solid rgba(255,255,255,.1)}
+.rail-btn.rail-tip:hover::after{opacity:1}
+.rail-sep{width:22px;height:1px;background:rgba(255,255,255,.08);margin:4px 0}
+
+/* ── SIDEBAR ──────────────────────────────── */
+#sidebar{position:fixed;left:var(--rail);top:0;bottom:0;width:var(--sidebar);background:var(--surface);border-right:1px solid var(--line);z-index:200;display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:14px 16px 12px;border-bottom:1px solid var(--line);flex-shrink:0}
+.sb-tag{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--purple);margin-bottom:4px}
+.sb-brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--ink);line-height:1;margin-bottom:2px}
+.sb-sub{font-size:10px;color:var(--ink3);line-height:1.4}
+
+.sb-progress{padding:12px 16px;border-bottom:1px solid var(--line);flex-shrink:0}
+.sbp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sbp-label{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.sbp-pct{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--purple)}
+.sbp-bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.sbp-fill{height:100%;background:linear-gradient(90deg,var(--purple),#1F7BEF);border-radius:2px;width:0%;transition:width .6s}
+.sbp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.sbp-s{background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;text-align:center}
+.sbp-sn{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.sbp-sl{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:1px}
+
+.sb-nav{flex:1;overflow-y:auto;padding:8px 0}
+.sb-section{padding:8px 16px 3px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink4)}
+.sb-item{padding:6px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;position:relative}
+.sb-item:hover{background:var(--paper)}
+.sb-item.active{background:var(--purple-pale)}
+.sb-item.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:3px;background:var(--purple);border-radius:0 2px 2px 0}
+.sb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sb-lbl{font-size:12px;color:var(--ink2);flex:1;line-height:1.3;font-weight:500}
+.sb-item.active .sb-lbl{color:var(--purple);font-weight:600}
+.sb-cnt{font-size:10px;color:var(--ink4);background:var(--paper);border:1px solid var(--line);padding:1px 6px;border-radius:10px;flex-shrink:0}
+.sb-hier-tag{font-size:9px;font-weight:700;letter-spacing:.04em;padding:1px 5px;border-radius:3px;text-transform:uppercase;flex-shrink:0}
+
+/* ── MAIN ─────────────────────────────────── */
+#main{position:fixed;left:calc(var(--rail) + var(--sidebar));top:0;right:0;bottom:0;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:46px;border-bottom:1px solid var(--line);background:var(--surface);display:flex;align-items:center;padding:0 18px;gap:10px;flex-shrink:0;z-index:50}
+.vs{display:flex;gap:1px;background:var(--line);border-radius:7px;padding:2px}
+.vs-btn{padding:4px 12px;border-radius:5px;font-size:12px;font-weight:500;color:var(--ink3);cursor:pointer;transition:all .12s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.vs-btn.act{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08);font-weight:600}
+.tb-div{width:1px;height:18px;background:var(--line)}
+.srch{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:4px 10px;min-width:200px;transition:border-color .15s}
+.srch:focus-within{border-color:var(--purple);background:var(--surface)}
+.srch input{border:none;background:transparent;font-size:12px;color:var(--ink);outline:none;width:100%;font-family:'DM Sans',sans-serif}
+.srch input::placeholder{color:var(--ink4)}
+.srch svg{width:12px;height:12px;stroke:var(--ink4);fill:none;flex-shrink:0}
+.tb-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+#row-count{font-size:11px;color:var(--ink3)}
+.tb-btn{padding:5px 13px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink2);font-family:'DM Sans',sans-serif;transition:all .12s}
+.tb-btn:hover{border-color:var(--line2);color:var(--ink)}
+.tb-btn.dark{background:var(--ink);border-color:var(--ink);color:white}
+
+/* ── VIEWS ────────────────────────────────── */
+.view{display:none !important;flex:1;flex-direction:column;overflow:hidden}
+.view.act{display:flex !important}
+
+/* ══ DASHBOARD ═══════════════════════════════ */
+#v-dash{overflow-y:auto;padding:24px 24px 48px;gap:16px}
+
+/* Top KPI row — numbers only, clean */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden;transition:all .2s}
+.kpi-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-2px)}
+.kpi-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--kc,var(--purple))}
+.kc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:6px}
+.kc-num{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;line-height:1;color:var(--kc,var(--purple));margin-bottom:2px}
+.kc-desc{font-size:11px;color:var(--ink3)}
+
+/* Matrix section */
+.matrix-section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.ms-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.ms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ms-col{border-radius:8px;padding:14px 16px;cursor:pointer;transition:all .2s;border:1.5px solid}
+.ms-col:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.ms-col-direct{background:var(--med-bg);border-color:#A7F3D0}
+.ms-col-indirect{background:var(--high-bg);border-color:#FDE68A}
+.ms-col-support{background:#EFF6FF;border-color:#BFDBFE}
+.msc-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.msc-badge{font-family:'Syne',sans-serif;font-size:20px;font-weight:800}
+.msc-label{font-size:11px;font-weight:700}
+.msc-rule{font-size:11px;color:var(--ink2);line-height:1.5;margin-bottom:10px}
+.msc-objs{display:flex;flex-direction:column;gap:5px}
+.msc-obj-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);font-weight:500;cursor:pointer;padding:3px 0;transition:color .12s}
+.msc-obj-row:hover{color:var(--purple)}
+.msc-obj-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Hierarchy section */
+.hier-section{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.hier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.hier-card{border-radius:8px;padding:12px 14px;border:1px solid;cursor:pointer;transition:all .2s}
+.hier-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.hc-num{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
+.hc-label{font-size:13px;font-weight:700;margin-bottom:4px}
+.hc-sub{font-size:11px;opacity:.7;line-height:1.4}
+
+/* Trim row */
+.trim-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.trim-card{border-radius:8px;padding:12px 14px;border:1px solid}
+.tc-q{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;margin-bottom:2px}
+.tc-n{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;margin-bottom:2px}
+.tc-l{font-size:10px;opacity:.7;font-weight:500}
+.tc-s{font-size:10px;opacity:.55;margin-top:3px}
+
+/* ══ GANTT ════════════════════════════════════ */
+#v-gantt{display:flex;flex-direction:column}
+.gantt-head{display:grid;grid-template-columns:220px 1fr;background:var(--surface);border-bottom:2px solid var(--line);flex-shrink:0}
+.gh-label{padding:10px 14px;border-right:1px solid var(--line);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);display:flex;align-items:center}
+.gh-quarters{display:grid;grid-template-columns:repeat(4,1fr)}
+.gh-q{padding:8px 12px;text-align:center;border-right:1px solid var(--line)}
+.gh-q:last-child{border-right:none}
+.gh-q-l{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.gh-q-m{font-size:10px;color:var(--ink3);margin-top:1px}
+.gantt-body{flex:1;overflow-y:auto}
+.gantt-row{display:grid;grid-template-columns:220px 1fr;border-bottom:1px solid var(--line);transition:background .1s}
+.gantt-row:hover{background:rgba(91,47,190,.02)}
+.gr-label{padding:8px 14px;border-right:1px solid var(--line);display:flex;align-items:flex-start;gap:7px;flex-shrink:0;min-height:52px}
+.gr-badge{font-family:'Syne',sans-serif;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;color:white;flex-shrink:0;letter-spacing:.04em;margin-top:2px}
+.gr-name{font-size:10px;color:var(--ink2);font-weight:500;line-height:1.35;cursor:pointer;transition:color .12s}
+.gr-name:hover{color:var(--purple)}
+.gr-cells{display:grid;grid-template-columns:repeat(4,1fr)}
+.gr-cell{border-right:1px solid var(--line);padding:5px 5px;display:flex;flex-direction:column;gap:3px;min-height:52px}
+.gr-cell:last-child{border-right:none}
+.g-bar{border-radius:4px;padding:4px 7px;cursor:pointer;transition:all .15s;border-left:2px solid;position:relative;min-height:26px}
+.g-bar:hover{filter:brightness(.95);transform:translateX(2px)}
+.gb-title{font-size:9px;font-weight:600;line-height:1.3}
+.gb-owner{font-size:9px;opacity:.65;margin-top:1px}
+.gb-dot{position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%}
+
+/* ══ TABLE ════════════════════════════════════ */
+#v-table{display:flex;flex-direction:column}
+.tbar{padding:8px 16px;border-bottom:1px solid var(--line);background:var(--surface);display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.fc{padding:3px 10px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--ink3);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .12s}
+.fc.on{background:var(--ink);border-color:var(--ink);color:white}
+.fc:hover:not(.on){border-color:var(--line2);color:var(--ink2)}
+.table-wrap{flex:1;overflow:auto}
+.dt{width:100%;border-collapse:collapse;font-size:12px}
+.dt thead tr{position:sticky;top:0;z-index:20}
+.dt th{background:var(--surface2);border-bottom:2px solid var(--line);border-right:1px solid var(--line);padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);text-align:left;white-space:nowrap;user-select:none}
+.dt th:last-child{border-right:none}
+.dt td{border-bottom:1px solid var(--line);border-right:1px solid rgba(0,0,0,.04);padding:8px 12px;vertical-align:top;transition:background .1s}
+.dt td:last-child{border-right:none}
+.dt tr:hover td{background:rgba(91,47,190,.03)}
+.dt .gr td{background:var(--surface2);font-weight:700;font-size:11px;color:var(--ink2);border-bottom:2px solid var(--line);padding:6px 12px;position:sticky;top:36px;z-index:10;cursor:pointer;transition:background .12s}
+.dt .gr td:hover{background:var(--purple-pale)}
+.dt .gr .gi{display:flex;align-items:center;gap:7px}
+.dt .gr .gi:hover .g-obj-name{color:var(--purple)}
+.g-obj-name{transition:color .12s}
+.cell-s{font-size:11px;color:var(--ink3);font-style:italic;min-width:130px;line-height:1.4}
+.cell-krs{font-weight:500;color:var(--ink2);min-width:150px;line-height:1.4}
+.cell-kpi{font-size:10px;color:var(--ink3);min-width:120px;font-family:'DM Mono',monospace;line-height:1.4}
+.cell-op{font-weight:600;min-width:130px;line-height:1.3}
+.cell-krop{font-size:12px;color:var(--ink2);min-width:140px;line-height:1.4}
+.cell-action{font-weight:500;color:var(--ink);min-width:190px;line-height:1.4}
+.cell-liv{color:var(--ink2);min-width:160px;font-size:11px;line-height:1.4}
+.cell-dl{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);white-space:nowrap}
+.cell-cmt{font-size:11px;color:var(--ink3);font-style:italic;min-width:110px}
+.ot{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-pale);padding:2px 8px;border-radius:20px}
+.tt{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;font-family:'DM Mono',monospace}
+.T1,.t1{background:var(--t1-bg);color:var(--t1-c);border:1px solid var(--t1-bd)}
+.T2,.t2{background:var(--t2-bg);color:var(--t2-c);border:1px solid var(--t2-bd)}
+.T3,.t3{background:var(--t3-bg);color:var(--t3-c);border:1px solid var(--t3-bd)}
+.T4,.t4{background:var(--t4-bg);color:var(--t4-c);border:1px solid var(--t4-bd)}
+.st{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+.s-todo{background:var(--todo-bg);color:var(--todo-c);border-color:#D1D5DB}
+.s-prog{background:var(--prog-bg);color:var(--prog-c);border-color:#FDE68A}
+.s-done{background:var(--done-bg);color:var(--done-c);border-color:#A7F3D0}
+.pt{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.04em}
+.p-crit{background:var(--crit-bg);color:var(--crit-c)}
+.p-high{background:var(--high-bg);color:var(--high-c)}
+.p-med{background:var(--med-bg);color:var(--med-c)}
+
+/* ══ DETAIL PANEL ════════════════════════════ */
+#dp{position:fixed;right:0;top:0;bottom:0;width:400px;background:var(--surface);border-left:1px solid var(--line);z-index:500;transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.08)}
+#dp.open{transform:translateX(0)}
+.dp-hd{padding:14px 16px;border-bottom:1px solid var(--line);flex-shrink:0;display:flex;align-items:flex-start;gap:10px}
+.dp-badge{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;padding:3px 9px;border-radius:5px;color:white;flex-shrink:0;letter-spacing:.05em;margin-top:2px}
+.dp-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;flex:1}
+.dp-close{width:26px;height:26px;border-radius:5px;border:1px solid var(--line);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--ink3);transition:background .12s}
+.dp-close:hover{background:var(--line)}
+.dp-body{flex:1;overflow-y:auto;padding:14px 16px}
+.dp-field{margin-bottom:12px}
+.dp-fl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink4);margin-bottom:4px}
+.dp-fv{font-size:13px;color:var(--ink2);line-height:1.5}
+.dp-fv.mono{font-family:'DM Mono',monospace;font-size:12px}
+.dp-div{height:1px;background:var(--line);margin:12px 0}
+.dp-status-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.dp-st-opt{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink3);font-family:'DM Sans',sans-serif;transition:all .15s}
+
+/* ══ TOAST ════════════════════════════════════ */
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:white;padding:8px 18px;border-radius:7px;font-size:12px;font-weight:500;z-index:999;transition:all .25s;pointer-events:none;opacity:0;font-family:'DM Sans',sans-serif}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<!-- RAIL -->
+<nav id="rail">
+  <div class="rail-logo">
+    <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="1.5">
+      <polygon points="8,1 15,4.5 15,11.5 8,15 1,11.5 1,4.5"/>
+      <circle cx="8" cy="8" r="2.5" fill="white" stroke="none"/>
+    </svg>
+  </div>
+  <button class="rail-btn rail-tip act" data-tip="Dashboard" data-view="dash" onclick="showView('dash',this)">
+    <svg viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+  </button>
+  <button class="rail-btn rail-tip" data-tip="Gantt Timeline" data-view="gantt" onclick="showView('gantt',this)">
+    <svg viewBox="0 0 16 16"><line x1="1" y1="4" x2="9" y2="4" stroke-width="2"/><line x1="4" y1="8" x2="13" y2="8" stroke-width="2"/><line x1="2" y1="12" x2="11" y2="12" stroke-width="2"/></svg>
+  </button>
+  <button class="rail-btn rail-tip" data-tip="Roadmap Table" data-view="table" onclick="showView('table',this)">
+    <svg viewBox="0 0 16 16"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="5" x2="6" y2="15"/></svg>
+  </button>
+  <div class="rail-sep"></div>
+  <button class="rail-btn rail-tip" data-tip="Export CSV" onclick="exportCSV()">
+    <svg viewBox="0 0 16 16"><path d="M8 1v9M5 7l3 3 3-3M2 12v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>
+  </button>
+</nav>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sb-head">
+    <div class="sb-tag">Marketing OS · 2026</div>
+    <div class="sb-brand">ARCHIPEL</div>
+    <div class="sb-sub">Strategy & Roadmap · CGO Document · Confidentiel</div>
+  </div>
+  <div class="sb-progress">
+    <div class="sbp-row">
+      <div class="sbp-label">Progression globale</div>
+      <div class="sbp-pct" id="gp-pct">0%</div>
+    </div>
+    <div class="sbp-bar"><div class="sbp-fill" id="gp-fill"></div></div>
+    <div class="sbp-stats">
+      <div class="sbp-s"><div class="sbp-sn" id="cnt-done" style="color:var(--done-c)">0</div><div class="sbp-sl">Terminés</div></div>
+      <div class="sbp-s"><div class="sbp-sn" id="cnt-prog" style="color:var(--high-c)">0</div><div class="sbp-sl">En cours</div></div>
+      <div class="sbp-s"><div class="sbp-sn" id="cnt-todo" style="color:var(--ink3)">0</div><div class="sbp-sl">À faire</div></div>
+    </div>
+  </div>
+  <div class="sb-nav" id="sb-nav"></div>
+</aside>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="vs">
+      <button class="vs-btn act" onclick="showView('dash',null)">Dashboard</button>
+      <button class="vs-btn" onclick="showView('gantt',null)">Gantt</button>
+      <button class="vs-btn" onclick="showView('table',null)">Roadmap</button>
+    </div>
+    <div class="tb-div"></div>
+    <div class="srch">
+      <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
+      <input type="text" placeholder="Rechercher actions, KRs, objectifs..." oninput="globalSearch(this.value)">
+    </div>
+    <div class="tb-right">
+      <span id="row-count" style="font-size:11px;color:var(--ink3)">— actions</span>
+      <button class="tb-btn" onclick="exportCSV()">↓ Export CSV</button>
+      <button class="tb-btn dark" onclick="resetAll()">Réinitialiser</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="v-dash" class="view act" style="overflow-y:auto;padding:22px 22px 48px;gap:14px">
+
+    <div style="background:var(--ink);border-radius:12px;padding:16px 18px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:8px">Vision Marketing 2026</div>
+        <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:white;line-height:1.4;font-style:italic;margin-bottom:12px">"Transformer chaque apprenant en leader via un système de désirabilité, d'acquisition et de rétention prédictible."</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.3);color:#6EE7B7;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600">9 directs</span>
+          <span style="background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.3);color:#FCD34D;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600">8 indirects</span>
+          <span style="background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.3);color:#93C5FD;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600">3 support</span>
+        </div>
+      </div>
+
+    <!-- Strategic hierarchy -->
+    <div class="hier-section">
+      <div class="ms-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 1L1 4v6l6 3 6-3V4L7 1z"/></svg>
+        Hiérarchie stratégique — Ordre psychologique de la croissance
+      </div>
+      <div class="hier-grid" id="hier-grid"></div>
+    </div>
+
+    <!-- KPI strip — numbers only -->
+    <div class="kpi-strip" id="kpi-strip"></div>
+
+    <!-- Contribution matrix -->
+    <div class="matrix-section">
+      <div class="ms-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="6"/><line x1="7" y1="4" x2="7" y2="7"/><circle cx="7" cy="10" r=".5" fill="currentColor"/></svg>
+        Matrice de contribution marketing — Comment chaque objectif est piloté
+      </div>
+      <div class="ms-grid" id="matrix-grid"></div>
+    </div>
+
+    <!-- Trims row -->
+    <div class="trim-row" id="trim-row"></div>
+
+  </div>
+
+  <!-- GANTT -->
+  <div id="v-gantt" class="view">
+    <div class="gantt-head">
+      <div class="gh-label">Objectif</div>
+      <div class="gh-quarters">
+        <div class="gh-q"><div class="gh-q-l" style="color:var(--t1-c)">T1</div><div class="gh-q-m">Mai — Juin 2026</div></div>
+        <div class="gh-q"><div class="gh-q-l" style="color:var(--t2-c)">T2</div><div class="gh-q-m">Juil — Sep 2026</div></div>
+        <div class="gh-q"><div class="gh-q-l" style="color:var(--t3-c)">T3</div><div class="gh-q-m">Oct — Nov 2026</div></div>
+        <div class="gh-q"><div class="gh-q-l" style="color:var(--t4-c)">T4</div><div class="gh-q-m">Déc 2026 — Jan 2027</div></div>
+      </div>
+    </div>
+    <div class="gantt-body" id="gantt-body"></div>
+  </div>
+
+  <!-- TABLE -->
+  <div id="v-table" class="view">
+    <div class="tbar">
+      <span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Trimestre</span>
+      <button class="fc on" onclick="filterTable('trim','all',this)">Tous</button>
+      <button class="fc" onclick="filterTable('trim','T1',this)">T1</button>
+      <button class="fc" onclick="filterTable('trim','T2',this)">T2</button>
+      <button class="fc" onclick="filterTable('trim','T3',this)">T3</button>
+      <button class="fc" onclick="filterTable('trim','T4',this)">T4</button>
+      <div style="width:1px;height:14px;background:var(--line)"></div>
+      <span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em">Statut</span>
+      <button class="fc" onclick="filterTable('status','À faire',this)">À faire</button>
+      <button class="fc" onclick="filterTable('status','En cours',this)">En cours</button>
+      <button class="fc" onclick="filterTable('status','Terminé',this)">Terminé</button>
+      <div style="width:1px;height:14px;background:var(--line)"></div>
+      <button class="fc" onclick="filterTable('prio','Critique',this)">🔴 Critique</button>
+      <button class="fc" onclick="filterTable('prio','Haute',this)">🟡 Haute</button>
+    </div>
+    <div class="table-wrap">
+      <table class="dt" id="dt">
+        <thead><tr>
+          <th>Obj. Stratégique</th><th>KR Stratégique</th><th>KPI Stratégique</th>
+          <th>Obj. Opérationnel</th><th>KR Opérationnel</th><th>KPI Opérationnel</th>
+          <th>Action</th><th>Livrable</th><th>Owner</th>
+          <th>Trimestre</th><th>Deadline</th><th>Statut</th><th>Priorité</th><th>Commentaire</th>
+        </tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div id="dp">
+  <div class="dp-hd" id="dp-hd"></div>
+  <div class="dp-body" id="dp-bd"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// DATA — Hiérarchie : Brand → Acq → Conv → Rét
+// ════════════════════════════════════════════
+const HIERARCHY = [
+  {num:"01",label:"Branding & Perception",sub:"Construire la désirabilité avant d'acheter de la visibilité",color:"#0D0D14",bg:"#F1F0F0",border:"#0D0D14",objs:["O0"]},
+  {num:"02",label:"Acquisition",sub:"Machine multicanale pour générer des leads qualifiés",color:"#5B2FBE",bg:"#EBE4FF",border:"#5B2FBE",objs:["O1","O2","O3"]},
+  {num:"03",label:"Conversion",sub:"Transformer les leads en inscrits et optimiser le cycle",color:"#0E9F88",bg:"#D1FAE5",border:"#0E9F88",objs:["O4","O5"]},
+  {num:"04",label:"Rétention",sub:"Fidéliser, renouveler et transformer en ambassadeurs",color:"#E91E8C",bg:"#FCE4F1",border:"#E91E8C",objs:["O6","O7","O8","O9"]},
+];
+
+const OBJS = [
+  // ── O0 : BRANDING & PERCEPTION ──────────────
+  // Hiérarchie 01 — Avant l'acquisition, construire la désirabilité
+  {badge:"O0",color:"#0D0D14",hier:"Branding & Perception",pillar:"Tous les piliers",
+   objS:"Construire une marque éducative dominante qui transforme la perception du soutien scolaire en Tunisie — de prestataire à mouvement de leaders",
+   objOp:"Déployer un système de contenu, storytelling et communauté qui génère désirabilité, confiance et viralité",
+   krs:[
+
+    // ── KR1 : MACHINE À CONTENU ─────────────
+    {krS:"≥ 1M reach mensuel organique · ≥ 100 contenus/mois · ≥ 1 contenu viral/semaine",
+     kpiS:"Reach organique mensuel par canal · Nb contenus publiés · Taux de partage",
+     krOp:"Déployer une machine à contenu systématique sur Facebook, Instagram et WhatsApp",
+     kpiOp:"Nb contenus/mois par canal · Formats dominants validés · Reach moyen par post",
+     actions:[
+      {a:"Désigner 1 référent contenu par centre (directrice ou enseignant volontaire) et former en 2h sur le format smartphone vertical",l:"7 référents contenus actifs + guide formation documenté",o:"CGO + Directrices",t:"T1",d:"15 Mai 2026",s:"À faire",p:"Critique",c:"Sans référent local, le CGO ne peut pas produire 100 contenus/mois seul"},
+      {a:"Créer le Content Kit Archipel : templates Canva (10 formats), accroches validées (20 hooks), guide ton éditorial (2 pages)",l:"Content Kit partagé sur Drive + formé à toutes les directrices",o:"CGO",t:"T1",d:"20 Mai 2026",s:"À faire",p:"Critique",c:"Le kit permet à n'importe qui de produire du contenu en 15 min"},
+      {a:"Définir le calendrier éditorial mensuel : 40% éducatif · 30% émotion/storytelling · 20% preuve sociale · 10% aspiration/élite",l:"Calendrier éditorial mois M publié avant le 25 du mois M-1",o:"CGO",t:"T1",d:"25 Mai 2026",s:"À faire",p:"Critique",c:"Sans calendrier = contenu chaotique, pas de cohérence de marque"},
+      {a:"Lancer la production : objectif ramp-up T1 (25/mois) → T2 (60/mois) → T3 (100/mois) — ne pas viser 100 dès mai",l:"Rapport production mensuel : nb contenus publiés par format et par canal",o:"CGO + Référents",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Ramp-up réaliste : mieux vaut 25 contenus excellents que 100 médiocres"},
+      {a:"Acquérir l'équipement minimum production : micro-cravate × 7 centres + stabilisateur × 3 + abonnement CapCut Pro",l:"Équipement livré dans chaque centre + brief utilisation",o:"CGO + Direction",t:"T1",d:"Juin 2026",s:"À faire",p:"Haute",c:"Budget estimé : ~1 200 TND une fois + 150 TND/mois outils"},
+      {a:"Valider ≥ 4 formats dominants par analyse des métriques sur 60 jours (pas 30 — délai minimum pour signal organique fiable)",l:"Rapport formats : reach moyen · taux de partage · leads générés par format",o:"CGO",t:"T2",d:"Sep 2026",s:"À faire",p:"Haute",c:"60 jours minimum pour un signal organique statistiquement fiable"},
+      {a:"Publier systématiquement à 3 horaires testés : 7h30 (matin parents), 13h (pause déj), 20h30 (soirée famille)",l:"Rapport performance par horaire · meilleur créneau identifié par audience",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"L\'algorithme favorise les posts qui engagent dans les 30 premières minutes"},
+     ]},
+
+    // ── KR2 : REACH & ATTRIBUTION ───────────
+    {krS:"≥ 40% leads influencés par contenu · ≥ 30% leads inbound (hors Ads)",
+     kpiS:"% leads déclarant avoir découvert via contenu · % leads sans source Ads",
+     krOp:"Mettre en place le système d\'attribution contenu → lead et mesurer l\'impact réel du branding",
+     kpiOp:"Question \'comment nous avez-vous connu\' à 100% inscriptions · % leads organiques dans CRM",
+     actions:[
+      {a:"Ajouter la question obligatoire 'Comment avez-vous connu Archipel ?' dans le CRM à chaque nouveau lead — avec 8 options prédéfinies",l:"Champ CRM actif · Rapport mensuel sources déclarées",o:"CGO + Commercial",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"C\'est la seule façon fiable de mesurer l\'attribution organique — l\'UTM seul ne suffit pas"},
+      {a:"Mettre en place le tracking UTM contenu → lead dans GA4 : UTM source=facebook/instagram/whatsapp · UTM medium=organic · UTM content=[format]",l:"Convention UTM contenu documentée · Attribution dans GA4 opérationnelle",o:"CGO + Dev",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"Complémentaire à la question déclarative — combine les deux pour cross-valider"},
+      {a:"Créer le dashboard attribution mensuel : leads par source (Ads payant / contenu organique / referral / direct / événement)",l:"Dashboard partagé direction · Rapport J+3 chaque mois",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Sans ce dashboard, impossible de défendre le budget O0 face à la direction"},
+      {a:"Fixer les jalons d\'attribution réalistes : T1 = 10% inbound · T2 = 20% · T3 = 30% — ne pas attendre 30% dès mai",l:"Jalons trimestriels documentés et suivis dans le dashboard",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"L\'inbound prend 3-6 mois à s\'installer — le mesurer dès T1 permet d\'ajuster"},
+     ]},
+
+    // ── KR3 : PREUVE SOCIALE & STORYTELLING ─
+    {krS:"≥ 20 témoignages élèves/mois · ≥ 10 témoignages parents/mois · ≥ 50 UGC/mois",
+     kpiS:"Nb témoignages filmés/mois · Nb UGC taggués Archipel · Reach posts preuve sociale",
+     krOp:"Systématiser la capture de témoignages et générer un flux continu de preuve sociale authentique",
+     kpiOp:"Bibliothèque témoignages · Taux UGC vs inscrits actifs · Engagement posts preuve",
+     actions:[
+      {a:"Créer le protocole de capture témoignage : 5 questions standard · durée 2-3 min · filmé smartphone portrait · accord parental numérique avant publication",l:"Protocole documenté + formulaire accord parental WhatsApp + 10 premiers témoignages filmés",o:"Directrices + CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Sans protocole standard, les témoignages sont irréguliers et inexploitables"},
+      {a:"Filmer ≥ 3 témoignages par centre par mois (élèves + parents) : format avant/après · format résultat · format 'pourquoi j\'ai choisi Archipel'",l:"≥ 21 vidéos/mois (3 × 7 centres) · Bibliothèque Drive organisée par format",o:"Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Le témoignage filmé est le créatif le plus performant — CPL via social proof -40% vs création pure"},
+      {a:"Lancer le programme UGC avec récompense concrète : chaque post public tagué #Archipel = 1 semaine de cours offerte tirée au sort chaque mois",l:"Programme UGC lancé · Règles publiées · 1er tirage au sort T1",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"La récompense doit être concrète et désirable — pas un badge virtuel"},
+      {a:"Fixer un ramp-up UGC réaliste : T1 = 15 UGC/mois · T2 = 30 UGC/mois · T3 = 50 UGC/mois — l\'UGC spontané arrive après la désirabilité",l:"Objectifs UGC trimestriels trackés dans le dashboard",o:"CGO",t:"T1",d:"Juin 2026",s:"À faire",p:"Haute",c:"Viser 50 dès T1 avec une marque non encore connue = frustration garantie"},
+      {a:"Lancer la série 'Avant / Après Archipel' : 1 histoire complète par semaine — niveau initial · difficultés · méthode · résultat · ambition future",l:"4 histoires complètes/mois · Format vidéo 60-90s + version texte pour Facebook",o:"CGO + Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Ce format génère 3-5× plus de partages que les contenus éducatifs classiques"},
+      {a:"Déployer le Wall of Fame digital : top 3 élèves par centre publiés chaque trimestre avec résultats réels et citation personnelle",l:"7 Wall of Fame publiés T1 + récurrence trimestrielle établie",o:"CGO + Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Décaler à juillet = rater les résultats bac juin — la fenêtre émotionnelle la plus forte"},
+     ]},
+
+    // ── KR4 : COMMUNAUTÉ PARENTS ─────────────
+    {krS:"≥ 1 200 membres parents actifs sur WhatsApp · Taux ouverture ≥ 55%",
+     kpiS:"Nb membres parents actifs (ouverts ≥ 1 msg / 30j) · Taux ouverture moyen",
+     krOp:"Construire la communauté WhatsApp parents comme canal de rétention et d\'acquisition",
+     kpiOp:"Croissance membres/mois · Taux ouverture · Taux de partage messages",
+     actions:[
+      {a:"Définir 'membre actif parent' : a ouvert ≥ 1 message dans les 30 jours ET n\'a pas désactivé les notifications",l:"Définition documentée + méthode de mesure dans WhatsApp Business",o:"CGO",t:"T1",d:"Mai 2026",s:"À faire",p:"Critique",c:"Sans définition précise, le KR est immesurable"},
+      {a:"Plan de croissance liste parents : freemium (test niveau → capture WA) + inscription → ajout automatique + QR code centre → liste + JPO → capture sur place",l:"4 points d\'entrée actifs · Objectif : 200 membres/mois en T1",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"La liste ne grossit pas seule — chaque touchpoint physique et digital doit alimenter la liste"},
+      {a:"Créer le calendrier éditorial WA parents : lundi (astuce accompagnement enfant) · mercredi (événement ou actualité centre) · vendredi (témoignage ou résultat)",l:"Calendrier mensuel parents · 80% valeur · 20% promo",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Règle absolue : 80% valeur éducative, 20% promo max — sinon désinscription massive"},
+      {a:"Organiser 1 webinaire parents mensuel animé par un enseignant Archipel : 'Comment accompagner votre enfant pendant les révisions'",l:"12 webinaires/an · ≥ 50 participants · NPS ≥ 8",o:"CGO + Enseignant référent",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Un parent qui assiste à 3 webinaires est un ambassadeur naturel"},
+     ]},
+
+    // ── KR5 : COMMUNAUTÉ ÉLÈVES ──────────────
+    {krS:"≥ 800 membres élèves actifs · ≥ 30% engagement mensuel (réponse ou clic)",
+     kpiS:"Nb membres élèves actifs · Taux réponse / clic sur messages",
+     krOp:"Construire la communauté WhatsApp élèves comme espace de motivation et d\'appartenance",
+     kpiOp:"Croissance membres élèves/mois · Taux participation défis · Taux engagement",
+     actions:[
+      {a:"Créer le calendrier éditorial WA élèves (ton différent des parents) : dimanche (motivation semaine) · mercredi (défi ou quiz) · vendredi (résultat top élèves semaine)",l:"Calendrier mensuel élèves · Ton jeune et dynamique · 0 message promotionnel",o:"CGO + Enseignant référent",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Les élèves se désinscrivent immédiatement si le canal est publicitaire"},
+      {a:"Lancer les défis hebdomadaires gamifiés dans le groupe élèves : 1 défi par semaine · classement publié vendredi · top 3 mis en avant",l:"52 défis/an · Taux participation ≥ 30% membres",o:"CGO + Enseignants",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Le défi crée l\'habitude d\'ouvrir le message — c\'est le moteur de l\'engagement"},
+      {a:"Intégrer les élèves ambassadeurs T4T comme animateurs du groupe WhatsApp élèves — ils créent du contenu pair-à-pair",l:"5 élèves ambassadeurs actifs dans le groupe · 2 contenus/semaine générés par les pairs",o:"CGO + Programme T4T",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Le peer content est 4× plus crédible que le contenu de la marque pour les ados"},
+     ]},
+
+    // ── KR6 : POSITIONNEMENT ÉLITE & CAMPAGNES
+    {krS:"≥ 3 campagnes branding/an · ≥ 2 Elite Summits/an · ≥ 70% prospects exposés ≥ 3 touchpoints en 2027",
+     kpiS:"Reach campagnes branding · NPS Summits · Nb touchpoints moyen avant conversion",
+     krOp:"Positionner Archipel comme mouvement éducatif élite — pas un centre de soutien ordinaire",
+     kpiOp:"Mémorisation message 'leader' vs 'soutien' · Reach campagnes · Part inscriptions profils élites",
+     actions:[
+      {a:"Déployer la campagne de repositionnement messaging : remplacer 'soutien scolaire' par 'formation de leaders' dans 100% des supports (site, Ads, WhatsApp, flyers)",l:"Audit messaging actuel · Nouveau brief créatif validé direction · 100% supports mis à jour",o:"CGO + Direction",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"ACT 4 de la narration : on change de stratégie. Ce n\'est pas cosmétique — c\'est une refonte identitaire"},
+      {a:"Créer la campagne branding majeure T1 : 'Ton enfant n\'a pas un problème de capacité — il a un problème de méthode et d\'environnement'",l:"Campagne live sur Facebook + Instagram · Budget dédié branding (séparé du budget acquisition) · ≥ 100K reach",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Budget branding recommandé : 20% du budget total Ads — distinct du budget acquisition"},
+      {a:"Organiser 2 Elite Summits en 2026 (juin + novembre) — pas 4, le ramp-up doit être réaliste opérationnellement",l:"2 événements · ≥ 50 participants · Intervenants externes (médecin, ingénieur, entrepreneur) · NPS ≥ 9 · Captation vidéo intégrale",o:"CGO + Ops",t:"T2",d:"Juin + Nov 2026",s:"À faire",p:"Haute",c:"Chaque Summit génère 2-3 semaines de contenu vidéo — c\'est aussi une machine à contenu"},
+      {a:"Documenter le parcours prospect idéal (≥ 3 touchpoints) et le construire pour 2027 — en 2026, objectif = cartographier les touchpoints existants",l:"Carte des touchpoints actuels documentée · Plan d\'optimisation pour 2027",o:"CGO",t:"T4",d:"Jan 2027",s:"À faire",p:"Haute",c:"Le KR 70% touchpoints est un objectif 2027 — en 2026 on construit la fondation"},
+      {a:"Allouer un budget branding dédié O0, séparé du budget acquisition : proposer ≥ 15% du budget marketing total pour O0",l:"Budget O0 validé par direction · Ligne budgétaire distincte dans le P&L marketing",o:"CGO + Direction",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"Sans budget dédié, O0 sera toujours sacrifié en faveur des Ads quand la pression commerciale monte"},
+     ]},
+
+   ]},
+
+    // ── O1 : ACQUISITION MULTICANAL ──────────────────────
+  {badge:"O1",color:"#5B2FBE",hier:"Acquisition",pillar:"P2 — Croissance & Acquisition",
+   objS:"Construire une machine d'acquisition scalable — 5M TND CA · 5 200 apprenants d'ici fin 2026",
+   objOp:"Machine d'acquisition multi-canal rentable, prédictible et non dépendante d'un seul canal",
+   krs:[
+    {krS:"20 000 leads qualifiés générés en 2026 · Meta Ads ≤ 60% des leads",
+     kpiS:"Nb leads qualifiés / mois / canal · Part Meta vs canaux alternatifs",
+     krOp:"Lancer et optimiser les campagnes Meta Ads Messenger comme canal principal",
+     kpiOp:"CPL online < 4 TND · CPL centres < 35 TND · Taux qualification leads ≥ 70%",
+     actions:[
+      {a:"Installer GA4 + GTM + Meta Pixel + convention UTM documentée sur tous les canaux avant tout lancement",l:"Tracking 100% opérationnel · Convention UTM partagée équipe",o:"CGO + Dev",t:"T1",d:"15 Mai 2026",s:"À faire",p:"Critique",c:"Sans tracking = pilotage à l'aveugle. C'est la fondation de tout O1"},
+      {a:"Créer les audiences Meta Ads : Custom (clients actifs, ex-clients, visiteurs site 30j) + Lookalike 1% sur chaque Custom",l:"6 audiences créées + testées dans Ads Manager",o:"CGO",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"Lookalike 1% sur ex-clients = CPL 2-3x inférieur au cold audience"},
+      {a:"Configurer et lancer 4 campagnes Messenger distinctes : Online · Centres · Réengagement ex-clients · Bachelier (test formulaire uniquement)",l:"4 campagnes actives + séquences ManyChat configurées par canal",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"1 campagne par audience = messages personnalisés = taux conversion supérieur"},
+      {a:"Établir le CPL baseline T1 par canal (Meta online, Meta centres, Google) avant d'optimiser",l:"Tableau CPL baseline par canal · Rapport semaine 1 de chaque campagne",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Sans baseline, impossible de mesurer -10%. C'est la référence de comparaison"},
+      {a:"Définir et déployer le système de scoring leads (1-5) : niveau scolaire +2 · ville proche centre +2 · question précise posée +1",l:"Scoring documenté · CRM configuré · Commerciaux formés",o:"CGO + Commercial",t:"T1",d:"30 Mai 2026",s:"À faire",p:"Haute",c:"Score 4-5 = traité dans les 2h · Score 1-2 = séquence auto uniquement"},
+      {a:"Review hebdomadaire chaque lundi matin : couper tout créatif avec ROAS < 5 après 72h · scaler uniquement les combinaisons audience/créatif prouvées",l:"Rapport lundi hebdo · Décisions consignées · Budget réalloué",o:"CGO",t:"T2",d:"Récurrent",s:"À faire",p:"Haute",c:"La discipline de coupe est plus importante que la création de nouveaux créatifs"},
+     ]},
+    {krS:"ROAS ≥ 10× sur les campagnes payantes · CPL réduit de -10% vs baseline T1",
+     kpiS:"ROAS mensuel par canal · CPL par canal vs baseline",
+     krOp:"Optimiser les campagnes par A/B test créatifs et ciblage pour maximiser le ROAS",
+     kpiOp:"ROAS par campagne · CPL avant/après optimisation · Coût par inscription",
+     actions:[
+      {a:"Configurer le tracking des conversions (inscriptions + RDV) dans Meta Ads et Google Ads avec valeur d'événement",l:"Tag de conversion actif + test de vérification · Valeur inscription trackée",o:"CGO + Dev",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"Sans valeur d'événement, le ROAS ne peut pas être calculé automatiquement"},
+      {a:"A/B tester 3 accroches créatives différentes par campagne avant d'augmenter le budget : accroche problème / accroche résultat / accroche social proof",l:"Résultats A/B test · Créatif gagnant identifié par campagne · CTR comparatif",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Ne jamais scaler avant d'avoir identifié le créatif gagnant — budget gaspillé sinon"},
+      {a:"Activer le retargeting sur 3 audiences chaudes : visiteurs landing page 7j · cliqueurs Ads sans inscription · ex-clients non-renouvelés",l:"3 campagnes retargeting actives · CPL retargeting vs cold mesuré",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"CPL retargeting = 2-3x moins cher que cold. C'est le budget le plus rentable"},
+      {a:"Tester Lookalike audiences progressivement : 1% d'abord (le plus précis) puis 2-3% si volume insuffisant",l:"Performance Lookalike 1% vs 2% vs 3% documentée",o:"CGO",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Lookalike 1% = très proche du profil client idéal · 3% = plus de volume, moins précis"},
+     ]},
+    {krS:"Taux de conversion lead → inscrit ≥ 15% · Cycle de vente ≤ 14 jours",
+     kpiS:"Taux conversion mensuel · Délai moyen J0 contact → inscription",
+     krOp:"Standardiser le processus de closing et automatiser les relances pour réduire le cycle",
+     kpiOp:"Inscriptions / leads qualifiés × 100 · Délai moyen fermeture",
+     actions:[
+      {a:"Créer le script de closing standard par canal : online (axé autonomie, flexibilité, résultats) · centres (axé proximité, suivi personnalisé, ambiance)",l:"2 scripts documentés + formation équipes commerciales + roleplay d'entraînement",o:"CGO + Direction",t:"T1",d:"30 Mai 2026",s:"À faire",p:"Critique",c:"Un commercial sans script perd 40% de ses leads faute d'argumentaire structuré"},
+      {a:"Configurer les relances automatiques J+1 et J+3 pour tout lead qualifié sans réponse : message différent à chaque relance",l:"Séquence relance Messenger · J+1 = question ouverte · J+3 = offre limitée",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Un lead sans relance à J+1 perd 70% de chance de convertir"},
+      {a:"Mettre en place le tableau de bord commercial hebdomadaire : leads reçus / contacts / RDV / inscriptions / taux conversion / délai moyen",l:"Dashboard commercial partagé · Réunion pipeline chaque lundi 30 min",o:"CGO + Commercial",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Ce qu'on ne mesure pas ne s'améliore pas — la visibilité crée la performance"},
+     ]},
+    {krS:"≥ 4 canaux d'acquisition actifs · Meta Ads ≤ 60% des leads totaux",
+     kpiS:"% leads par canal · CAC blended mensuel",
+     krOp:"Diversifier les sources de leads pour réduire la dépendance aux Ads Meta",
+     kpiOp:"Part de chaque canal dans le total leads · ROI documenté par canal",
+     actions:[
+      {a:"Lancer Google Ads Search sur 4 groupes : local (cours soutien + ville) · national (soutien scolaire Tunisie) · matières (cours maths terminale) · marque (Archipel)",l:"4 groupes campagnes Google actifs + extensions d'annonces + tracking conversions",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Google capte l'intention active — un parent qui cherche est bien plus proche de l'inscription"},
+      {a:"Activer le referral comme canal : programme ambassadeurs parents avec codes traçables (lié à O8)",l:"Programme referral live · Part referral dans total leads trackée",o:"CGO + Commercial",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"CPL referral = 5-10 TND vs 25-35 TND paid — le canal le moins cher de tous"},
+      {a:"Tester les influenceurs micro-locaux (5K-30K followers parents Tunisie) sur 2-3 profils en T1 avec tracking UTM dédié",l:"2-3 collaborations testées · CPL influenceur documenté · Décision de scaling T2",o:"CGO",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Micro-influenceur local = audience qualifiée géographiquement et démographiquement"},
+     ]},
+   ]},
+
+  // ── O2 : SEO & ORGANIQUE ──────────────────────────────
+  {badge:"O2",color:"#1F7BEF",hier:"Acquisition",pillar:"P2 — Croissance & Acquisition",
+   objS:"Site web live avec taux de conversion ≥ 6% · Trafic organique croissant · Freemium opérationnel",
+   objOp:"Construire l'actif digital organique d'Archipel — site, SEO local et freemium comme canaux gratuits permanents",
+   krs:[
+    {krS:"Site live · Conv. landing ≥ 6% · 200+ visites organiques/mois avant fin T1",
+     kpiS:"Taux conversion visiteur → clic CTA · Visites organiques mensuelles",
+     krOp:"Déployer le site et les landing pages avec tracking complet avant le 30 mai 2026",
+     kpiOp:"Visites / clics CTA / leads générés via site · Taux rebond",
+     actions:[
+      {a:"Créer les landing pages localisées : 1 page online nationale + 7 pages centres (1 par ville) avec CTA Messenger + formulaire de contact + tracking GA4",l:"8 landing pages live · Tracking validé dans GA4 · Conv. baseline mesurée",o:"CGO + Dev",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"1 LP par centre = message local = conversion 2x supérieure à une LP générique"},
+      {a:"Optimiser le CTA et la hiérarchie visuelle de chaque LP pour atteindre ≥ 6% de conversion : headline · bénéfice principal · preuve sociale · CTA unique",l:"A/B test headline + CTA · Taux conversion ≥ 6% validé dans GA4",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Critique",c:"Si < 6% après 2 semaines : changer le headline d'abord, puis le CTA, puis la preuve sociale"},
+      {a:"Installer les outils de heatmap (Hotjar gratuit) sur les landing pages pour comprendre où les visiteurs abandonnent",l:"Heatmaps actives · Rapport mensuel zones de friction · Itérations basées sur données",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Une LP optimisée avec les données comportementales = +2-3% de conversion sans budget supplémentaire"},
+     ]},
+    {krS:"7 pages SEO locales en top 5 Google · 7 GMB actifs · 200 visites organiques/mois",
+     kpiS:"Position Google par requête cible · Trafic organique mensuel par page",
+     krOp:"Créer une présence locale sur Google Maps et les recherches locales basiques",
+     kpiOp:"Position moyenne · Clics organiques / mois · Leads via SEO",
+     actions:[
+      {a:"Rédiger et publier 7 pages SEO optimisées 'cours de soutien [ville]' : H1 avec mot-clé local · 800+ mots · FAQ · témoignage local · CTA Messenger",l:"7 pages publiées · Score SEO Yoast ≥ 80% · Méta-descriptions rédigées",o:"CGO",t:"T3",d:"Oct 2026",s:"À faire",p:"Critique",c:"0 concurrent optimisé sur ces requêtes locales en Tunisie — fenêtre d'opportunité courte"},
+      {a:"Créer et optimiser les 7 fiches Google My Business : photos (10 min · intérieur · extérieur · équipe) · horaires · catégorie 'École privée' · description avec mots-clés",l:"7 GMB vérifiés · Score completude 100% · Premières photos publiées",o:"Directrices",t:"T1",d:"15 Mai 2026",s:"À faire",p:"Critique",c:"GMB apparaît avant le site sur Google — c'est la première impression locale"},
+      {a:"Collecter activement les avis Google : demander à chaque parent satisfait via WhatsApp avec lien direct vers la fiche GMB",l:"≥ 5 avis par centre avant fin T1 · Note moyenne ≥ 4.5/5",o:"Directrices + CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Les avis Google influencent à la fois le SEO local et la décision d'inscription"},
+      {a:"Publier 2 articles de blog SEO ciblant les requêtes à fort volume : 'comment réussir le bac en Tunisie' · 'soutien scolaire ou cours particulier'",l:"2 articles 1 200+ mots · Optimisés · CTA vers LP en bas de chaque article",o:"CGO + Enseignant",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Articles de blog = trafic organique passif qui grandit chaque mois sans nouveau budget"},
+     ]},
+    {krS:"≥ 500 leads freemium capturés T1 · Taux conversion freemium → inscrit ≥ 5%",
+     kpiS:"Leads capturés via freemium / mois · Taux conv. freemium → payant",
+     krOp:"Activer le freemium comme premier point de contact qualifiant pour les parents prospects",
+     kpiOp:"Scans test de niveau · Téléchargements guide · Conv. freemium → lead chaud",
+     actions:[
+      {a:"Créer le test de niveau en ligne (10 questions par matière et par niveau) avec résultats personnalisés envoyés automatiquement sur WhatsApp",l:"Test live · Page résultats personnalisée · Capture WhatsApp automatique",o:"CGO + Dev",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un parent qui fait passer le test à son enfant est auto-qualifié — il cherche activement une solution"},
+      {a:"Rédiger le guide PDF 'Réussir le bac 2026 en Tunisie' (15 pages) : planning semaine par semaine · méthodes par matière · conseils anti-stress",l:"PDF prêt · Landing page dédiée · Partage WhatsApp automatique après capture email/WA",o:"CGO + Enseignant référent",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Ce guide est viral dans les groupes WhatsApp parents — chaque partage = nouveau lead"},
+      {a:"Créer la démo cours gratuite de 30 min (1 session live par semaine) avec inscription via WhatsApp",l:"Planning démos live · ≥ 4 sessions/mois · Rapport taux conv. démo → inscription",o:"CGO + Enseignant",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Un parent qui voit le cours en action ne compare plus les prix — il compare la valeur"},
+     ]},
+   ]},
+
+  // ── O3 : REMPLISSAGE CENTRES ──────────────────────────
+  {badge:"O3",color:"#0E9F88",hier:"Acquisition",pillar:"P2 — Croissance & Acquisition",
+   objS:"Remplissage ≥ 85% dans chaque centre · 8 centres opérationnels · Marge ≥ 25%",
+   objOp:"Assurer le remplissage maximal de chaque centre via un marketing local hyper-ciblé et structuré",
+   krs:[
+    {krS:"Remplissage ≥ 85% dans chaque centre · Marge centre ≥ 25%",
+     kpiS:"Taux remplissage mensuel par centre · Marge mensuelle par centre",
+     krOp:"Déployer les campagnes locales géolocalisées et les plans marketing par centre",
+     kpiOp:"Inscriptions / capacité × 100 · Leads par semaine par centre en peak",
+     actions:[
+      {a:"Lancer les campagnes Meta Ads géolocalisées rayon 10-15 km pour chaque centre avec message local : 'Cours de soutien à [quartier] — inscriptions ouvertes'",l:"7 campagnes locales actives · Budget par centre proportionnel à la capacité restante",o:"CGO + Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Un parent qui voit le nom de son quartier dans la pub arrête de scroller"},
+      {a:"Mettre en place le plan d'urgence marketing automatique : si remplissage < 70% à J-14 de la rentrée → activer budget Ads × 2 + WhatsApp broadcast zone + flyers intensifiés",l:"SOP plan urgence documenté · Seuil d'alerte configuré dans le dashboard",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Réagir à J-5 est trop tard — l'alerte à J-14 laisse le temps d'agir"},
+      {a:"Identifier les 3-5 commerces partenaires autour de chaque centre (libraire, pharmacie, boulangerie) pour affichage A4 avec QR code traçable",l:"≥ 21 affichages commerces activés · Scans QR par zone trackés",o:"Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un affichage dans 20 commerces = 2 000 parents exposés par semaine à coût zéro"},
+     ]},
+    {krS:"7 JPO organisées · Conv. JPO ≥ 30% · 5 000 flyers distribués avec QR traçables",
+     kpiS:"Présence JPO · Inscriptions sur place · Scans QR par zone",
+     krOp:"Organiser les événements locaux et la distribution physique pour maximiser la notoriété locale",
+     kpiOp:"Conv. JPO (inscrits / présents) · CPL flyer (scans → leads) · Rayon de couverture",
+     actions:[
+      {a:"Planifier les 7 JPO (3 semaines avant la rentrée) : invitation WhatsApp + Facebook locale · démo cours 30 min · offre exclusive -10% valable 48h · commercial présent",l:"7 JPO organisées · Rapport présence + inscriptions sur place",o:"CGO + Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un parent qui visite le centre s'inscrit 3x plus — l'expérience physique élimine les objections"},
+      {a:"Imprimer 5 000 flyers A5 en 3 versions (online · centre · bachelier) avec QR code unique par zone pour tracker les scans par provenance",l:"5 000 flyers distribués · Dashboard scans par zone · CPL flyer calculé",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"QR traçable = on sait quelle zone convertit le mieux pour concentrer le budget"},
+      {a:"Contacter ≥ 3 établissements scolaires par centre pour distribution flyers à la sortie des classes et mini-conférence 20 min lors des réunions parents-profs",l:"≥ 21 établissements contactés · Accords écrits · Planning distribution",o:"Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"La sortie école = 200 parents en 30 min. Meilleur endroit pour distribuer un flyer"},
+     ]},
+    {krS:"100% directrices pilotent leur marketing local · ≥ 20 leads/sem/centre en peak",
+     kpiS:"Taux exécution plan marketing local · Leads générés par centre par semaine",
+     krOp:"Former et outiller les directrices pour piloter leur micro-marché comme un CGO local",
+     kpiOp:"Plan marketing exécuté % · Leads centre / semaine en T2",
+     actions:[
+      {a:"Produire le kit marketing mensuel clé en main pour chaque directrice : 3 visuels prêts à poster · script WhatsApp relance leads · planning distribution flyers · check-list JPO",l:"Kit livré avant le 1er de chaque mois · Format Drive partagé",o:"CGO",t:"T1",d:"Récurrent",s:"À faire",p:"Haute",c:"Sans kit = chaque directrice improvise. Avec kit = cohérence de marque + exécution garantie"},
+      {a:"Formation marketing mensuelle directrices (2h) : lecture métriques centre · identification priorités · partage bonnes pratiques · Q&A",l:"12 sessions/an · Compte-rendu · Score compétence marketing par directrice",o:"CGO",t:"T1",d:"Juin 2026",s:"À faire",p:"Haute",c:"Une directrice qui comprend ses métriques prend de meilleures décisions marketing locales"},
+      {a:"Lancer la compétition inter-centres trimestrielle : le centre avec le meilleur taux de remplissage reçoit un budget Ads bonus de 500 TND pour le trimestre suivant",l:"Classement trimestriel publié · Budget bonus versé au centre gagnant",o:"CGO + Direction",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"La compétition saine entre centres est le meilleur levier de motivation existant"},
+     ]},
+   ]},
+
+  // ── O4 : MARQUE EMPLOYEUR ─────────────────────────────
+  {badge:"O4",color:"#DB4437",hier:"Conversion",pillar:"P1+P6 — Pédagogie & Collaborateur",
+   objS:"ADN enseignants 15% → 60% en 2026 · Score marque employeur ≥ 4.2/5 · Turnover ≤ 15%",
+   objOp:"Construire une marque employeur visible et désirable qui attire des enseignants alignés avec la vision Archipel",
+   krs:[
+    {krS:"≥ 300 candidatures qualifiées · ≥ 50% via canaux organiques · Score employeur ≥ 4/5",
+     kpiS:"Nb candidatures reçues · % candidatures organiques vs payantes · Note plateformes",
+     krOp:"Rendre visible l'expérience d'enseigner chez Archipel sur LinkedIn et les réseaux",
+     kpiOp:"Candidatures organiques / mois · Taux conversion candidature → entretien",
+     actions:[
+      {a:"Créer la page carrières dédiée sur le site : vidéo d'ambiance 2 min · 5 témoignages enseignants · critères ADN Archipel clairs · formulaire candidature direct",l:"Page carrières live · Taux visite/candidature mesuré dans GA4",o:"CGO + Dev",t:"T1",d:"Juin 2026",s:"À faire",p:"Haute",c:"Un candidat qui lit les valeurs avant de postuler est pré-qualifié — il auto-sélectionne"},
+      {a:"Lancer la série LinkedIn 'Enseigner chez Archipel' : 1 portrait enseignant/mois · parcours · méthode · ce qu'il/elle aime dans la mission · photo authentique",l:"12 portraits/an publiés · Métriques LinkedIn : impressions + clics profil",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Double audience : candidats potentiels ET parents qui voient la qualité de l'équipe"},
+      {a:"Filmer et publier chaque bootcamp ADN : coulisses · moments forts · témoignage post-bootcamp de 3 enseignants · reach cible ≥ 2 000 par post",l:"1 post par bootcamp sur LinkedIn + Facebook · Reach ≥ 2 000",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un bootcamp visible montre l'investissement formation — argument fort pour les candidats exigeants"},
+      {a:"Encourager les enseignants satisfaits à laisser un avis sur LinkedIn recommendations et Glassdoor : message personnalisé + lien direct",l:"≥ 20 avis positifs collectés · Note Glassdoor ≥ 4/5",o:"CGO + RH",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"90% des candidats consultent les avis en ligne avant de postuler"},
+     ]},
+    {krS:"≥ 60% enseignants portent l'ADN Archipel fin 2026 · Programme cooptation ≥ 20% recrutements",
+     kpiS:"% enseignants certifiés ADN · % recrutements via cooptation",
+     krOp:"Transformer les enseignants actuels en ambassadeurs du recrutement via la cooptation",
+     kpiOp:"Nb cooptations reçues / mois · Taux validation profils cooptés",
+     actions:[
+      {a:"Créer le Manifeste de l'enseignant Archipel : 1 page, beau design, 5 engagements concrets · distribuer aux enseignants actuels + candidats + facultés d'éducation",l:"Manifeste design validé · Distribué à 100% enseignants actuels · Publié en ligne",o:"CGO + Direction pédagogique",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un manifeste public crée un filtre naturel — les mauvais candidats ne postulent pas"},
+      {a:"Lancer le programme de cooptation interne : chaque enseignant qui recommande un candidat recruté = prime de 200 TND après 3 mois de période d'essai validée",l:"Programme cooptation documenté · ≥ 5 cooptations en T2",o:"CGO + RH",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Un enseignant coopté par un pair est déjà culturellement filtré — taux de rétention +30%"},
+      {a:"Mettre en place l'enquête satisfaction candidats post-processus : 5 questions · NPS candidat · axes d'amélioration processus de recrutement",l:"Enquête active · Rapport trimestriel satisfaction candidats",o:"CGO + RH",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"L'expérience candidat reflète l'expérience collaborateur — soigner les deux est la même chose"},
+     ]},
+   ]},
+
+  // ── O5 : ÉLITE ACADÉMIQUE ─────────────────────────────
+  {badge:"O5",color:"#F5A623",hier:"Conversion",pillar:"P1 — Excellence Pédagogique",
+   objS:"≥ 20% apprenants profils élites par centre · Réussite concours ≥ 17/20 pour les élites Archipel",
+   objOp:"Attirer les meilleurs profils scolaires, amplifier leurs réussites et faire d'Archipel la référence de l'excellence académique tunisienne",
+   krs:[
+    {krS:"≥ 20% inscrits avec profil élite (moy. ≥ 14/20 ou section scientifique) · ≥ 3 campagnes élite/an",
+     kpiS:"% inscrits profils élites · Nb campagnes élite lancées",
+     krOp:"Attirer les profils élites via des campagnes ciblées et un positionnement aspirationnel",
+     kpiOp:"CPL profils élites · Taux conv. leads élites · % inscrits élites / total",
+     actions:[
+      {a:"Créer 3 campagnes Meta Ads dédiées élites (audiences : parents mentionnant bac, concours, médecine, prépa) avec message distinctif 'programme d'excellence, pas de soutien'",l:"3 campagnes élites actives · CPL élite vs CPL standard mesuré",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Le mot 'soutien' repoussera les profils élites — le message doit être premium dès la pub"},
+      {a:"Lancer la série de contenu 'Les élites Archipel' : interview mensuelle d'un élève avec moyenne ≥ 16/20 · méthode · ambition · conseil aux autres",l:"12 interviews/an · Format vidéo 3-5 min + version écrite Facebook",o:"CGO + Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un élite visible attire d'autres élites — l'effet réseau fonctionne vers le haut"},
+      {a:"Créer l'offre 'Archipel Elite Track' : programme distinct avec sessions de prépa concours, intervenants spécialisés, suivi individuel renforcé",l:"Programme Elite Track documenté · Brochure dédiée · Pricing premium",o:"CGO + Direction pédagogique",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Un produit distinct avec pricing premium positionne Archipel dans un segment à part"},
+     ]},
+    {krS:"Wall of Fame actif dans 100% des centres · ≥ 25% résultats concours ≥ 17/20",
+     kpiS:"Wall of Fame déployé % · % résultats élites ≥ 17/20 · UGC généré par Wall of Fame",
+     krOp:"Valoriser et amplifier les réussites élites comme actif marketing central",
+     kpiOp:"Nb publications Wall of Fame · Partages posts résultats · NPS élèves élites",
+     actions:[
+      {a:"Déployer le Wall of Fame dans chaque centre : support physique mural + version digitale Facebook · top 3 élèves par centre mis à jour chaque trimestre avec résultats et citation",l:"7 Wall of Fame physiques installés · 4 publications digitales/an par centre",o:"CGO + Directrices",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Déployer avant les résultats bac juin pour capturer la fenêtre émotionnelle la plus forte"},
+      {a:"Publier chaque résultat remarquable immédiatement : note de contrôle · admission concours · mention bac · avec photo et accord parental · story + post",l:"100% réussites ≥ 16/20 publiées dans les 48h · Template publication standardisé",o:"Directrices + CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un parent qui voit la réussite de l'enfant d'un voisin partage massivement — c'est viral"},
+      {a:"Créer le programme de certifications internes Archipel : badges trimestriels (Bronze · Silver · Gold · Elite) basés sur progression et résultats · partageable sur WhatsApp",l:"Système de badges déployé · Template partage badge · ≥ 30% élèves ayant partagé un badge",o:"CGO + Pédagogie",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Un badge partagé par un élève = exposition gratuite à ses contacts = recrutement naturel"},
+     ]},
+    {krS:"≥ 2 Elite Summits en 2026 · ≥ 50 participants · NPS ≥ 9",
+     kpiS:"Nb Summits organisés · Participants · NPS événement · Contenu vidéo généré",
+     krOp:"Créer des événements d'exception qui renforcent le positionnement élite et génèrent du contenu",
+     kpiOp:"NPS Summit · Leads générés post-Summit · Reach vidéos captées",
+     actions:[
+      {a:"Organiser le 1er Elite Summit en juin 2026 : lieu premium · 3 intervenants externes (médecin + ingénieur + entrepreneur tunisien) · 50 élèves élites Archipel + 20 parents · captation intégrale",l:"Summit Juin organisé · ≥ 50 participants · NPS ≥ 9 · 10+ vidéos exploitables",o:"CGO + Ops",t:"T4",d:"Nov 2026",s:"À faire",p:"Haute",c:"Un Summit = 3 semaines de contenu vidéo + preuve de positionnement élite"},
+      {a:"Créer le programme de mentorat Alumni → élèves actuels : 10 anciens élèves Archipel maintenant en faculté deviennent mentors actifs",l:"10 mentors recrutés · Planning sessions · Témoignages mentors dans le contenu",o:"CGO + Alumni",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Un mentor qui a réussi le même parcours est l'argument de vente le plus crédible qui existe"},
+     ]},
+   ]},
+
+  // ── O6 : LIFECYCLE & RÉTENTION ───────────────────────
+  {badge:"O6",color:"#E91E8C",hier:"Rétention",pillar:"P3 — Expérience Apprenante",
+   objS:"Churn 35% → 25% en 2026 · NPS parents ≥ 8/10 · Renouvellement ≥ 85% · LTV × 1.5",
+   objOp:"Structurer le marketing de rétention pour que chaque client actuel devienne un client fidèle et un ambassadeur",
+   krs:[
+    {krS:"Communication mensuelle 100% parents · Détection inactifs ≤ 14 jours · Churn ≤ 25%",
+     kpiS:"Taux ouverture rapports WA · Nb inactifs détectés et relancés · Taux churn mensuel",
+     krOp:"Mettre en place le système de communication lifecycle pour prévenir le churn silencieux",
+     kpiOp:"% parents recevant rapport mensuel · Délai moyen détection inactivité · Taux churn",
+     actions:[
+      {a:"Créer le template rapport de progression mensuel WhatsApp : assiduité % · matières travaillées · point fort du mois · axe d'amélioration · prochaine étape",l:"Template validé · Processus d'envoi documenté · Envoi à 100% parents avant le 5 de chaque mois",o:"CGO",t:"T1",d:"30 Mai 2026",s:"À faire",p:"Critique",c:"Un parent qui reçoit de la valeur chaque mois ne cherche pas ailleurs — c'est la rétention la moins chère"},
+      {a:"Configurer l'alerte inactivité dans le LMS : tout élève inactif > 7 jours → relance WhatsApp personnalisée automatique au parent",l:"Automation active · 0 élève inactif sans relance dans les 24h",o:"CGO + Tech",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Le churn commence par l'inactivité — intervenir à J+7 prévient 60% des désistements"},
+      {a:"Mettre en place les 4 moments WOW du parcours : J+1 bienvenue · premier progrès mesurable · 3 mois de bilan · 1 an d'anniversaire Archipel",l:"4 séquences auto configurées dans WhatsApp Business · Taux ouverture ≥ 70% par moment",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"L'attachement émotionnel à une marque se construit dans les moments — pas dans les transactions"},
+      {a:"Analyser les causes du churn chaque trimestre : enquête sortie par WhatsApp aux non-renouvelés · identifier les top 3 causes · plan d'action correctif",l:"Enquête churn trimestrielle · Top 3 causes identifiées · Plan correctif documenté",o:"CGO + Direction",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"On ne peut pas réduire un churn qu'on ne comprend pas — l'enquête est non-négociable"},
+     ]},
+    {krS:"≥ 30% renouvellements anticipés · LTV × 1.5 via upsell et cross-sell",
+     kpiS:"% renouvellements avant échéance · CA upsell / CA total · Panier moyen par client",
+     krOp:"Maximiser la valeur par client via le renouvellement anticipé et les offres complémentaires",
+     kpiOp:"Renouvellements anticipés / total · CA cross-sell / mois · NPS renouvelés",
+     actions:[
+      {a:"Créer et lancer la campagne renouvellement anticipé J-60 : message WhatsApp personnalisé + offre exclusive -8% valable 15 jours · relance J-45 et J-30",l:"Campagne J-60 active · Taux conv. campagne J-60 mesuré · Objectif : ≥ 30% anticipés",o:"CGO + Commercial",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"J-60 = décision sereine. J-7 = pression = mauvaise expérience = risque de non-renouvellement"},
+      {a:"Lancer les offres upsell aux élèves actifs depuis ≥ 3 mois : online → hybride · formule standard → formule renforcée · ajout d'une matière",l:"Offres upsell documentées · % clients ayant upgradé · CA upsell mensuel",o:"CGO + Commercial",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Un client en confiance depuis 3 mois est le plus facile à upseller — le timing est clé"},
+      {a:"Activer le cross-sell frères/sœurs : campagne dédiée aux familles avec 1 enfant inscrit pour inscrire le 2e avec réduction famille -15%",l:"Campagne famille active · Nb inscriptions fratrie / trimestre",o:"CGO",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Le CAC d'un 2e enfant dans la même famille est quasi nul — la confiance est déjà établie"},
+      {a:"Produire ≥ 4 campagnes de valorisation des réussites dans l'année (1 par trimestre) pour maintenir l'attachement émotionnel des familles actives",l:"4 campagnes publiées · Métriques engagement · Impact NPS mesuré avant/après",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un élève valorisé publiquement ne part pas — ses parents le garderaient même si le prix augmentait"},
+     ]},
+    {krS:"NPS parents ≥ 8/10 · 4 événements parents/an · NPS événements ≥ 9",
+     kpiS:"NPS parents trimestriel · Participation événements · NPS post-événement",
+     krOp:"Créer des expériences parents à forte valeur perçue pour transformer la satisfaction en loyauté",
+     kpiOp:"NPS trimestriel · Taux participation événements · % parents devenus ambassadeurs post-événement",
+     actions:[
+      {a:"Mesurer le NPS parents tous les trimestres : enquête WhatsApp 2 questions · question recommandation 0-10 · question raison · analyse par centre",l:"NPS mesuré 4x/an · Rapport par centre · Plan d'action si NPS < 7",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Le NPS non mesuré ne s'améliore pas — mesurer = responsabiliser = améliorer"},
+      {a:"Organiser 4 événements parents dans l'année calés sur le calendrier scolaire : oct (rentrée) · jan (mi-année) · avr (prépa examens) · juin (résultats)",l:"4 événements · ≥ 50 participants chacun · NPS ≥ 9 · Documentation impact",o:"CGO + Ops",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un parent qui assiste à 3 événements est un ambassadeur naturel — il parle d'Archipel à ses voisins"},
+     ]},
+   ]},
+
+  // ── O7 : AUTOMATION ───────────────────────────────────
+  {badge:"O7",color:"#7C4DFF",hier:"Rétention",pillar:"P4 — Excellence Opérationnelle",
+   objS:"ROI automatisation marketing ≥ 3× · ≥ 5 automations actives · 0 lead qualifié oublié",
+   objOp:"Automatiser le funnel marketing pour que l'équipe commerciale ne passe plus de temps sur les tâches répétitives",
+   krs:[
+    {krS:"Séquence Messenger 100% automatisée · 0 lead qualifié sans réponse dans les 24h",
+     kpiS:"Délai moyen premier contact · % leads qualifiés sans réponse · Taux qualification auto",
+     krOp:"Déployer la séquence Messenger de qualification automatique dans ManyChat",
+     kpiOp:"Leads qualifiés automatiquement / total · Temps commercial économisé / semaine",
+     actions:[
+      {a:"Configurer la séquence Messenger complète dans ManyChat : accueil automatique → 3 questions qualification → branche online/centre → routage commercial avec contexte complet",l:"Séquence testée end-to-end · Commercial reçoit fiche lead qualifié automatiquement",o:"CGO",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"Le commercial ne doit intervenir qu'après qualification — 0 temps perdu sur les leads non qualifiés"},
+      {a:"Créer les branches de qualification distinctes : branche online (question niveau + matières) · branche centre (question ville + centre préféré + horaires)",l:"2 branches configurées · Taux qualification par branche mesuré",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Critique",c:"Une question générique donne une réponse générique — la branche personnalisée donne un lead contextualisé"},
+      {a:"Configurer les relances automatiques pour les leads qui abandonnent la séquence à mi-chemin : message J+1 (question ouverte) + J+3 (offre limitée)",l:"Taux complétion séquence avant vs après relance mesurée",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"30-40% des leads abandonnent la séquence avant de la terminer — la relance récupère la moitié"},
+     ]},
+    {krS:"≥ 2 000 abonnés WhatsApp Broadcast · ≥ 5 automations marketing avec ROI documenté",
+     kpiS:"Abonnés WA Broadcast actifs · ROI par automation calculé",
+     krOp:"Déployer le WhatsApp Broadcast segmenté et automatiser les communications récurrentes",
+     kpiOp:"Croissance abonnés WA/mois · Taux ouverture Broadcast · Temps économisé par automation",
+     actions:[
+      {a:"Mettre en place WhatsApp Broadcast segmenté en 4 listes : nouveaux inscrits (J1-J30) · actifs (J30+) · à risque churn (inactifs > 7j) · à renouveler (J-60 échéance)",l:"4 listes créées et segmentées · ≥ 500 abonnés par liste · Messages distincts par segment",o:"CGO",t:"T2",d:"Août 2026",s:"À faire",p:"Critique",c:"Un message générique à toute la liste = désengagement. Segmentation = +40% taux ouverture"},
+      {a:"Automatiser les 5 communications récurrentes : rapport mensuel parents · alerte inactivité élève · relance lead froid · campagne J-60 renouvellement · onboarding J+1",l:"5 automations actives · ROI de chacune calculé (temps économisé × coût horaire)",o:"CGO + Tech",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"Ces 5 automations économisent ≥ 8h de travail manuel par semaine pour l'équipe"},
+      {a:"Documenter le ROI de chaque automation mensuellement dans un tableau partagé direction : temps avant · temps après · économie mensuelle · ROI cumulé",l:"Rapport ROI automations mensuel · Dashboard partagé direction",o:"CGO",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Le ROI documenté est l'argument pour augmenter l'investissement tech — sans preuve, pas de budget"},
+      
+     ]},
+   ]},
+
+  // ── O8 : AMBASSADEURS & REFERRAL ──────────────────────
+  {badge:"O8",color:"#00BCD4",hier:"Rétention",pillar:"P5 — Communauté & Rayonnement",
+   objS:"96 ambassadeurs actifs en 2026 · ≥ 5% CA B2C via referral · Conv. recommandation ≥ 30%",
+   objOp:"Transformer les parents satisfaits en canal d'acquisition structuré avec un CPL 10× inférieur aux Ads",
+   krs:[
+    {krS:"96 ambassadeurs actifs · CPL referral ≤ 50% du CPL paid",
+     kpiS:"Nb ambassadeurs actifs (ayant recommandé ≥ 1 personne / 90j) · CPL referral vs paid",
+     krOp:"Recruter, activer et fidéliser les ambassadeurs parents avec un programme structuré",
+     kpiOp:"Ambassadeurs actifs / total inscrits · CPL referral mensuel",
+     actions:[
+      {a:"Identifier les super fans existants dans la base : chercher dans le CRM 'comment avez-vous connu Archipel' = bouche à oreille → ce sont les premiers ambassadeurs à activer",l:"Liste super fans identifiée · Contactés personnellement dans les 48h",o:"CGO + Commercial",t:"T1",d:"Juin 2026",s:"À faire",p:"Critique",c:"Ces parents recommandent déjà gratuitement — les formaliser coûte zéro et double leur impact"},
+      {a:"Créer le kit ambassadeur complet : code unique traçable · 3 visuels WhatsApp prêts à partager · texte prêt à copier-coller · tableau de bord de ses parrainages",l:"Kit ambassadeur digital livré à chaque ambassadeur · Onboarding 15 min par téléphone",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Moins le parent doit réfléchir, plus il partage — le kit élimine toute friction"},
+      {a:"Définir la récompense ambassadeur : 1 mois de cours offert après 1 inscription confirmée · 3 mois offerts après 3 inscriptions confirmées",l:"Structure de récompense documentée · Communiquée à tous les ambassadeurs",o:"CGO + Direction",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"La récompense doit avoir une valeur perçue forte (60-90 TND) et être liée à la valeur du produit"},
+      {a:"Lancer le classement mensuel top ambassadeurs dans le groupe WA parents : afficher les 3 premiers avec leur prénom et leur nombre de filleuls",l:"Classement mensuel publié · Effet compétition mesuré (variation nb parrainages avant/après)",o:"CGO",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Le classement public active la compétition positive et incite les autres à participer"},
+     ]},
+    {krS:"≥ 5% CA B2C via referral · Conv. recommandation → inscription ≥ 30%",
+     kpiS:"CA via codes ambassadeurs · Taux conv. lead referral vs lead paid",
+     krOp:"Maximiser la conversion des leads referral et mesurer l'impact économique du programme",
+     kpiOp:"Inscriptions via code / total inscriptions · CA referral mensuel",
+     actions:[
+      {a:"Tracker l'attribution referral dans le CRM : chaque inscription via code ambassadeur → consignée avec le code · l'ambassadeur notifié · le CA attribué",l:"Attribution referral 100% trackée · Rapport CA referral mensuel",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Sans attribution, impossible de mesurer le 5% · le programme n'est pas défendable sans preuve"},
+      {a:"Former les commerciaux au traitement prioritaire des leads referral : rappel dans les 2h · message d'accueil mentionnant l'ambassadeur · argumentaire confiance",l:"Script closing referral · SLA traitement leads referral ≤ 2h",o:"CGO + Commercial",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Un lead referral arrive avec confiance préétablie — un rappel tardif gâche cet avantage"},
+      {a:"Activer les alumni (anciens élèves) comme ambassadeurs distincts des parents : programme spécifique avec récompense adaptée (réduction sur cours de remise à niveau)",l:"10 alumni ambassadeurs actifs · CA referral alumni trackée",o:"CGO + Alumni",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Un ancien élève qui a réussi grâce à Archipel est le témoignage vivant le plus crédible"},
+     ]},
+   ]},
+
+  // ── O9 : NOTORIÉTÉ & RAYONNEMENT ──────────────────────
+  {badge:"O9",color:"#43A047",hier:"Rétention",pillar:"P5 — Communauté & Rayonnement",
+   objS:"Archipel reconnu comme référence éducative en Tunisie · ≥ 2 partenariats institutionnels · ≥ 1M impressions institutionnelles",
+   objOp:"Positionner Archipel comme mouvement éducatif de référence via les media, les partenariats et les événements publics",
+   krs:[
+    {krS:"≥ 2 prises de parole media · Reach cumulé ≥ 100K · ≥ 1 article de presse",
+     kpiS:"Nb prises de parole réalisées · Reach media cumulé · Articles de presse",
+     krOp:"Obtenir une présence media régulière comme expert en éducation tunisienne",
+     kpiOp:"Reach par media · Nb contacts journalistes · Demandes entrantes post-media",
+     actions:[
+      {a:"Prospecter et confirmer ≥ 2 passages dans des émissions éducatives ou familiales (Nessma, Al Hiwar, Mosaïque FM) : angle 'comment motiver son adolescent' pas 'pub Archipel'",l:"2 passages media réalisés · Reach cumulé ≥ 100K · Enregistrement exploitable comme contenu",o:"CGO + Direction",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"L'angle expert = invitation gratuite. L'angle publicitaire = payant et moins crédible"},
+      {a:"Créer un dossier de presse Archipel : histoire · mission · résultats chiffrés · cas clients · visuels HD · contact presse · distribuer aux rédactions locales",l:"Dossier presse 8 pages · Envoyé à ≥ 20 rédactions tunisiennes",o:"CGO",t:"T1",d:"Juin 2026",s:"À faire",p:"Haute",c:"Un dossier de presse professionnel multiplie par 3 les chances d'être contacté par des journalistes"},
+      {a:"Publier une tribune ou article de fond dans un media digital tunisien (leaders.com.tn · businessnews.com.tn) sur l'éducation des adolescents en Tunisie",l:"1 article publié · Reach ≥ 5 000 lectures · Backlink vers le site Archipel",o:"CGO + Fondateur",t:"T3",d:"Oct 2026",s:"À faire",p:"Haute",c:"Un article de fond = crédibilité institutionnelle + SEO via backlink + contenu réutilisable"},
+     ]},
+    {krS:"≥ 2 partenariats institutionnels actifs · ≥ 200 familles touchées via partenariats",
+     kpiS:"Nb partenariats signés · Familles touchées via partenariats · Leads générés",
+     krOp:"Développer des partenariats avec des structures qui ont accès aux familles cibles",
+     kpiOp:"Leads via partenariats / mois · CA généré via B2B2C · NPS partenaires",
+     actions:[
+      {a:"Identifier et contacter ≥ 5 associations de parents d'élèves (APEL) dans les villes des centres : présentation Archipel lors d'une réunion mensuelle",l:"5 APEL contactées · 2 accords de partenariat signés · Communication aux membres réalisée",o:"CGO + Direction",t:"T2",d:"Août 2026",s:"À faire",p:"Haute",c:"1 partenariat APEL de 300 familles = 50-100 leads qualifiés sans budget Ads"},
+      {a:"Développer des partenariats avec des mutuelles d'entreprises ou comités CE pour offrir Archipel comme avantage salarié aux employés parents",l:"2 accords CE/mutuelle signés · Code avantage unique · CA B2B2C mesuré",o:"CGO + Direction",t:"T3",d:"Nov 2026",s:"À faire",p:"Haute",c:"Le CE ne cherche pas un fournisseur — il cherche un avantage différenciant pour ses salariés"},
+      {a:"Organiser ≥ 2 événements à forte valeur institutionnelle dans l'année : 1 événement grand public (éducation) + 1 événement partenaires et institutions",l:"2 événements · ≥ 100 participants cumulés · NPS ≥ 9 · Couverture media",o:"CGO + Ops",t:"T3",d:"Nov 2026",s:"À faire",p:"Haute",c:"Un événement public bien organisé génère des retombées media gratuites et des partenariats entrants"},
+     ]},
+    {krS:"2 000 abonnés WA Broadcast · 3 contenus/sem · ER ≥ 4% · Score réputation ≥ 4.5/5",
+     kpiS:"Abonnés WA · Taux engagement réseaux · Score réputation Google/Facebook",
+     krOp:"Maintenir une présence digitale institutionnelle cohérente qui renforce la crédibilité",
+     kpiOp:"Croissance abonnés WA/mois · ER moyen · Note Google/Facebook",
+     actions:[
+      {a:"Développer la liste WhatsApp Broadcast institutionnel : 3 messages/semaine (valeur éducative 80% · actualités Archipel 20%) · objectif 2 000 abonnés avant fin T2",l:"≥ 2 000 abonnés actifs · Taux ouverture ≥ 55% · Croissance mensuelle trackée",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"WhatsApp Broadcast = canal propriétaire zéro-dépendance algorithme — l'actif le plus précieux"},
+      {a:"Publier ≥ 3 contenus/semaine sur les réseaux avec suivi ER : 1 éducatif · 1 témoignage ou résultat · 1 coulisses ou actualité centre",l:"Calendrier éditorial institutionnel mensuel · ER ≥ 4% maintenu",o:"CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Cohérence > fréquence — 3 contenus excellents par semaine > 7 contenus médiocres"},
+      {a:"Gérer activement la réputation en ligne : répondre à 100% des avis Google dans les 48h · remercier les positifs · résoudre les négatifs avec solution publique",l:"100% avis répondus ≤ 48h · Note Google ≥ 4.5/5 sur tous les centres",o:"Directrices + CGO",t:"T2",d:"Juil 2026",s:"À faire",p:"Haute",c:"Une réponse professionnelle à un avis négatif est souvent plus convaincante qu'un avis positif"},
+     ]},
+   ]},
+  ];
+  const SUPPORT_ITEMS=[
+    {badge:'S1',color:'#2563EB',label:'Convention UTM & qualité données CRM',desc:'100% liens trackés · 0 doublon CRM · Audit mensuel sources GA4. Marketing = garant de la data. O4.3 KR1'},
+    {badge:'S2',color:'#2563EB',label:'ROI marketing documenté par centre',desc:'Budget Ads → leads → inscrits → CA → ROI. Rapport J+3 chaque mois pour la direction. O4.1 KR2'},
+    {badge:'S3',color:'#2563EB',label:'Kit marketing & formation des directrices',desc:'Kit mensuel clé en main livré avant le 1er. 2h/mois formation métriques + bonnes pratiques. O6.5 KR7'},
+  ];
+  const INDIRECT_ITEMS=[
+    {badge:'P1',color:'#F59E0B',label:'Promotion gamification & social learning',desc:'Rendre badges, classements et co-studying désirables via UGC et challenges viraux. O1.3 KR1-2'},
+    {badge:'P3a',color:'#F59E0B',label:'Communauté parents — groupes WA & webinaires',desc:'1 groupe WA par centre, webinaires mensuels, moments WOW du parcours. O3.2 KR2'},
+    {badge:'P3b',color:'#F59E0B',label:'Valorisation 100% réussites apprenantes',desc:'Chaque note, concours = post + message WA parent avec accord préalable. O3.4 KR3'},
+    {badge:'P3c',color:'#F59E0B',label:'Push assiduité — contenu quotidien',desc:'Défi du jour, astuce révision 60s, rappel session. Un élève exposé est 2x plus assidu. O3.3 KR1'},
+    {badge:'P4',color:'#F59E0B',label:'Contribution à la marge via remplissage & CAC',desc:'85% vs 65% remplissage = +15-20 pts marge. Canaux gratuits réduisent le CAC blended. O4.1 KR1'},
+    {badge:'P5a',color:'#F59E0B',label:'Recrutement & activation T4T + Alumni',desc:'Campagnes T4T ciblées, LinkedIn Alumni, témoignages alumni dans les Ads. O5.1 KR2'},
+    {badge:'P6a',color:'#F59E0B',label:'Fierté de marque et rétention collaborateurs',desc:'Marque forte = collaborateurs fiers = turnover réduit. La fierté vient de l\'extérieur. O6.4 KR1'},
+    {badge:'P6b',color:'#F59E0B',label:'Valorisation publique des équipes internes',desc:'Portraits directrices et enseignants stars. Attire candidats ET fidélise les équipes. O6.3 KR1'},
+  ];
+    const groups_d=[
+    {type:'direct',label:'Directs',count:10,color:'#059669',bg:'#D1FAE5',border:'#A7F3D0',rule:'Marketing pilote seul ce résultat — impact > 50% du KR. Si marketing arrête → le KR échoue.',items:OBJS.map(o=>({badge:o.badge,color:o.color,label:o.objOp.substring(0,40)+(o.objOp.length>40?'…':''),desc:o.pillar}))},
+    {type:'indirect',label:'Indirects',count:8,color:'#D97706',bg:'#FEF3C7',border:'#FDE68A',rule:'Marketing co-contribue — impact 20-50%. Un autre département pilote. Marketing mesure des indicateurs intermédiaires.',items:INDIRECT_ITEMS},
+    {type:'support',label:'Support',count:3,color:'#2563EB',bg:'#EFF6FF',border:'#BFDBFE',rule:'Marketing outille — impact < 20%. Marketing fournit outils et structure. KR = qualité du livrable.',items:SUPPORT_ITEMS},
+  ];
+
+// ════════════════════════════════════════════
+// STATUS STORE
+// ════════════════════════════════════════════
+const statuses={};
+let curDetail=null;
+
+function initStatuses(){
+  OBJS.forEach(obj=>obj.krs.forEach(kr=>kr.actions.forEach((_,i)=>{
+    statuses[aid(obj.badge,kr.krOp,i)]='À faire';
+  })));
+  document.getElementById('cnt-todo').textContent=Object.keys(statuses).length;
+  updateProgress();
+}
+
+function aid(badge,krOp,i){ return badge+'_'+krOp.slice(0,10)+'_'+i; }
+
+function cycleStatus(id){
+  const c=['À faire','En cours','Terminé'];
+  statuses[id]=c[(c.indexOf(statuses[id])+1)%3];
+  refreshStatus(id);
+  updateProgress();
+  toast('Statut mis à jour : '+statuses[id]);
+}
+
+function setStatus(id,val){ statuses[id]=val; refreshStatus(id); updateProgress(); }
+
+function refreshStatus(id){
+  const s=statuses[id];
+  document.querySelectorAll('[data-sid="'+id+'"]').forEach(el=>{
+    el.textContent=s==='Terminé'?'✓ Terminé':s;
+    el.className='st '+(s==='À faire'?'s-todo':s==='En cours'?'s-prog':'s-done');
+  });
+  document.querySelectorAll('[data-dot="'+id+'"]').forEach(el=>{
+    el.style.background=s==='Terminé'?'#10B981':s==='En cours'?'#F59E0B':'#D1D5DB';
+  });
+  if(curDetail&&curDetail.sid===id) openDetail(curDetail.obj,curDetail.kr,curDetail.ai);
+}
+
+function updateProgress(){
+  const vals=Object.values(statuses);
+  const done=vals.filter(v=>v==='Terminé').length;
+  const prog=vals.filter(v=>v==='En cours').length;
+  const todo=vals.length-done-prog;
+  const pct=vals.length?Math.round(done/vals.length*100):0;
+  const d=document.getElementById('cnt-done');
+  const p=document.getElementById('cnt-prog');
+  const t=document.getElementById('cnt-todo');
+  const f=document.getElementById('gp-fill');
+  const pp=document.getElementById('gp-pct');
+  if(d) d.textContent=done;
+  if(p) p.textContent=prog;
+  if(t) t.textContent=todo;
+  if(f) f.style.width=pct+'%';
+  if(pp) pp.textContent=pct+'%';
+}
+
+function resetAll(){
+  Object.keys(statuses).forEach(k=>statuses[k]='À faire');
+  document.querySelectorAll('[data-sid]').forEach(el=>{el.textContent='À faire';el.className='st s-todo';});
+  document.querySelectorAll('[data-dot]').forEach(el=>{el.style.background='#D1D5DB';});
+  updateProgress();
+  toast('Tous les statuts réinitialisés');
+}
+
+// ════════════════════════════════════════════
+// BUILD SIDEBAR
+// ════════════════════════════════════════════
+function buildSidebar(){
+  const nav=document.getElementById('sb-nav');
+  const groups={};
+  OBJS.forEach(o=>{if(!groups[o.hier])groups[o.hier]=[];groups[o.hier].push(o);});
+  Object.entries(groups).forEach(([hier,objs])=>{
+    nav.innerHTML+=`<div class="sb-section">${hier}</div>`;
+    objs.forEach(obj=>{
+      const total=obj.krs.reduce((s,k)=>s+k.actions.length,0);
+      nav.innerHTML+=`<div class="sb-item" id="sb-${obj.badge}" onclick="selectObjSidebar('${obj.badge}')">
+        <div class="sb-dot" style="background:${obj.color}"></div>
+        <div class="sb-lbl">${obj.badge} — ${obj.objOp.substring(0,38)}...</div>
+        <div class="sb-cnt">${total}</div>
+      </div>`;
+    });
+  });
+}
+
+function selectObjSidebar(badge){
+  document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById('sb-'+badge);
+  if(el) el.classList.add('active');
+  showView('table',null);
+  filterTable('obj',badge,null);
+}
+
+// ════════════════════════════════════════════
+// BUILD DASHBOARD
+// ════════════════════════════════════════════
+function buildDash(){
+  const allActs=OBJS.flatMap(o=>o.krs.flatMap(k=>k.actions));
+
+  // KPI strip
+  const ks=document.getElementById('kpi-strip');
+  if(ks) ks.innerHTML=`
+    <div class="kpi-card" style="--kc:#0D0D14"><div class="kc-lbl">Objectif O0</div><div class="kc-num">Brand</div><div class="kc-desc">≥ 1M reach organique / mois</div></div>
+    <div class="kpi-card" style="--kc:#5B2FBE"><div class="kc-lbl">Objectifs directs</div><div class="kc-num">10</div><div class="kc-desc">Marketing pilote à 100%</div></div>
+    <div class="kpi-card" style="--kc:#1F7BEF"><div class="kc-lbl">Key Results</div><div class="kc-num">31</div><div class="kc-desc">Sur 6 piliers entreprise</div></div>
+    <div class="kpi-card" style="--kc:#0E9F88"><div class="kc-lbl">Actions planifiées</div><div class="kc-num">${allActs.length}</div><div class="kc-desc">T1 Mai → T4 Jan 2027</div></div>
+    <div class="kpi-card" style="--kc:#DB4437"><div class="kc-lbl">Actions critiques</div><div class="kc-num">${allActs.filter(a=>a.p==='Critique').length}</div><div class="kc-desc">Priorité maximale</div></div>`;
+
+  // Contribution matrix
+  const mg=document.getElementById('matrix-grid');
+  if(mg){
+    mg.innerHTML='';
+    groups_d.forEach(g=>{
+      mg.innerHTML+=`<div class="ms-col ms-col-${g.type}">
+        <div class="msc-head"><div class="msc-badge" style="color:${g.color}">${g.count}</div>
+        <div class="msc-label" style="color:${g.color}">${g.label} — ${g.type==='direct'?'Marketing pilote':g.type==='indirect'?'Co-contribution':'Marketing outille'}</div></div>
+        <div class="msc-rule">${g.rule}</div>
+        <div class="msc-objs">${g.items.map(item=>`<div class="msc-obj-row" onclick="selectObjSidebar('${item.badge}')">
+          <div class="msc-obj-dot" style="background:${item.color}"></div>
+          <span><strong style="color:${item.color}">${item.badge}</strong> — ${item.label}</span>
+        </div>`).join('')}</div>
+      </div>`;
+    });
+  }
+
+  // Hierarchy grid
+  const hg=document.getElementById('hier-grid');
+  const hColors={
+    'Branding & Perception':{bg:'#F1F0F0',border:'#0D0D14',nc:'#0D0D14',tc:'#1A1A2A'},
+    'Acquisition':{bg:'#EBE4FF',border:'#5B2FBE',nc:'#5B2FBE',tc:'#3D1A7A'},
+    'Conversion':{bg:'#D1FAE5',border:'#0E9F88',nc:'#0E9F88',tc:'#065F46'},
+    'Rétention':{bg:'#FCE4F1',border:'#E91E8C',nc:'#E91E8C',tc:'#9D1555'},
+  };
+  if(hg){
+    hg.innerHTML='';
+    HIERARCHY.forEach((h,i)=>{
+      const hc=hColors[h.label]||{bg:'#EEE',border:'#999',nc:'#333',tc:'#333'};
+      hg.innerHTML+=`<div class="hier-card" style="background:${hc.bg};border-color:${hc.border}" onclick="showView('table',null);filterTable('hier','${h.label}',null)">
+        <div class="hc-num" style="color:${hc.nc}">0${i+1}</div>
+        <div class="hc-label" style="color:${hc.tc}">${h.label}</div>
+        <div class="hc-sub" style="color:${hc.tc}">${h.sub}</div>
+        <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">
+          ${h.objs.map(b=>`<span style="background:${hc.border}25;color:${hc.nc};font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;cursor:pointer" onclick="event.stopPropagation();selectObjSidebar('${b}')">${b}</span>`).join('')}
+        </div>
+      </div>`;
+    });
+  }
+
+  // Trim row
+  const tr=document.getElementById('trim-row');
+  const tdata=[
+    {t:'T1',l:'Mai — Juin 2026',s:'Fondations & Brand',bg:'var(--t1-bg)',bc:'var(--t1-bd)',tc:'var(--t1-c)'},
+    {t:'T2',l:'Juil — Sep 2026',s:'Lancement & Scaling',bg:'var(--t2-bg)',bc:'var(--t2-bd)',tc:'var(--t2-c)'},
+    {t:'T3',l:'Oct — Nov 2026',s:'Optimisation',bg:'var(--t3-bg)',bc:'var(--t3-bd)',tc:'var(--t3-c)'},
+    {t:'T4',l:'Déc 2026 — Jan 2027',s:'Bilan & Préparer 2027',bg:'var(--t4-bg)',bc:'var(--t4-bd)',tc:'var(--t4-c)'},
+  ];
+  if(tr){
+    tdata.forEach(td=>{
+      const n=allActs.filter(a=>a.t===td.t).length;
+      tr.innerHTML+=`<div class="trim-card ${td.t.toLowerCase()}">
+        <div class="tc-q" style="color:${td.tc}">${td.t}</div>
+        <div class="tc-n" style="color:${td.tc}">${n}</div>
+        <div class="tc-l" style="color:${td.tc}">actions</div>
+        <div class="tc-s" style="color:${td.tc}">${td.l}<br>${td.s}</div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('row-count').textContent=allActs.length+' actions';
+}
+
+
+// ════════════════════════════════════════════
+// BUILD GANTT
+// ════════════════════════════════════════════
+function buildGantt(){
+  const body=document.getElementById('gantt-body');
+  OBJS.forEach(obj=>{
+    const row=document.createElement('div');
+    row.className='gantt-row';
+    const cells={T1:'',T2:'',T3:'',T4:''};
+    obj.krs.forEach(kr=>kr.actions.forEach((act,ai)=>{
+      const id=aid(obj.badge,kr.krOp,ai);
+      const s=statuses[id]||'À faire';
+      const dc=s==='Terminé'?'#10B981':s==='En cours'?'#F59E0B':'#D1D5DB';
+      const alpha=s==='Terminé'?'30':'15';
+      cells[act.t||'T1']+=`<div class="g-bar" style="background:${obj.color}${alpha};border-left-color:${obj.color}"
+        onclick="openDetail(${JSON.stringify(obj).replace(/"/g,'&quot;')},${JSON.stringify(kr).replace(/"/g,'&quot;')},${ai})">
+        <div class="gb-dot" style="background:${dc}" data-dot="${id}"></div>
+        <div class="gb-title" style="color:${obj.color}">${act.a.substring(0,52)}${act.a.length>52?'…':''}</div>
+        <div class="gb-owner">👤 ${act.o} · ${act.d}</div>
+      </div>`;
+    }));
+    row.innerHTML=`<div class="gr-label">
+      <div class="gr-badge" style="background:${obj.color}">${obj.badge}</div>
+      <div class="gr-name" onclick="selectObjSidebar('${obj.badge}')">${obj.objOp.substring(0,52)}${obj.objOp.length>52?'…':''}</div>
+    </div>
+    <div class="gr-cells">
+      <div class="gr-cell">${cells.T1}</div>
+      <div class="gr-cell">${cells.T2}</div>
+      <div class="gr-cell">${cells.T3}</div>
+      <div class="gr-cell">${cells.T4}</div>
+    </div>`;
+    body.appendChild(row);
+  });
+}
+
+// ════════════════════════════════════════════
+// BUILD TABLE — SINGLE OBJ CLICKABLE ON LEFT
+// ════════════════════════════════════════════
+function buildTable(){
+  const tbody=document.getElementById('tb');
+  let total=0;
+  OBJS.forEach(obj=>{
+    const actCount=obj.krs.reduce((s,k)=>s+k.actions.length,0);
+    const gr=document.createElement('tr');
+    gr.className='gr';
+    gr.dataset.obj=obj.badge;
+    gr.dataset.hier=obj.hier;
+    gr.innerHTML=`<td colspan="14">
+      <div class="gi" onclick="filterTable('obj','${obj.badge}',null)">
+        <div style="width:9px;height:9px;border-radius:50%;background:${obj.color}"></div>
+        <span class="g-obj-name" style="color:${obj.color};font-weight:700">${obj.badge}</span>
+        <span class="g-obj-name">— ${obj.objOp}</span>
+        <span style="font-weight:400;color:var(--ink3);font-size:11px">(${actCount} actions)</span>
+        <span style="margin-left:auto;font-size:10px;color:${obj.color};background:${obj.color}20;padding:1px 8px;border-radius:10px;font-weight:600">${obj.hier}</span>
+      </div>
+    </td>`;
+    tbody.appendChild(gr);
+
+    obj.krs.forEach(kr=>{
+      kr.actions.forEach((act,ai)=>{
+        total++;
+        const id=aid(obj.badge,kr.krOp,ai);
+        const s=statuses[id]||'À faire';
+        const tr=document.createElement('tr');
+        tr.dataset.trim=act.t;tr.dataset.status=s;tr.dataset.prio=act.p;
+        tr.dataset.obj=obj.badge;tr.dataset.hier=obj.hier;
+        tr.dataset.search=(obj.objOp+kr.krOp+act.a+act.l+act.o).toLowerCase();
+        tr.innerHTML=`
+          <td class="cell-s">${obj.objS}</td>
+          <td class="cell-krs">${kr.krS}</td>
+          <td class="cell-kpi">${kr.kpiS}</td>
+          <td class="cell-op" style="color:${obj.color}">${obj.objOp}</td>
+          <td class="cell-krop">${kr.krOp}</td>
+          <td class="cell-kpi">${kr.kpiOp}</td>
+          <td class="cell-action">${act.a}</td>
+          <td class="cell-liv">${act.l}</td>
+          <td><div class="ot">👤 ${act.o}</div></td>
+          <td><span class="tt ${act.t}">${act.t}</span></td>
+          <td class="cell-dl">${act.d}</td>
+          <td><span class="st ${s==='À faire'?'s-todo':s==='En cours'?'s-prog':'s-done'}" data-sid="${id}" onclick="cycleStatus('${id}')">${s==='Terminé'?'✓ Terminé':s}</span></td>
+          <td><span class="pt ${act.p==='Critique'?'p-crit':act.p==='Haute'?'p-high':'p-med'}">${act.p}</span></td>
+          <td class="cell-dl" style="font-style:italic">${act.c||'—'}</td>`;
+        // Click on row → detail
+        tr.style.cursor='pointer';
+        tr.addEventListener('click',e=>{ if(e.target.classList.contains('st')) return; openDetail(obj,kr,ai); });
+        tbody.appendChild(tr);
+      });
+    });
+  });
+  document.getElementById('row-count').textContent=`${total} actions`;
+}
+
+// ════════════════════════════════════════════
+// DETAIL PANEL
+// ════════════════════════════════════════════
+function openDetail(obj,kr,ai){
+  const act=kr.actions[ai];
+  const id=aid(obj.badge,kr.krOp,ai);
+  curDetail={obj,kr,ai,sid:id};
+  const s=statuses[id]||'À faire';
+
+  document.getElementById('dp-hd').innerHTML=`
+    <div class="dp-badge" style="background:${obj.color}">${obj.badge}</div>
+    <div class="dp-title">${act.a}</div>
+    <button class="dp-close" onclick="closeDetail()">✕</button>`;
+
+  document.getElementById('dp-bd').innerHTML=`
+    <div class="dp-status-row">
+      <span class="dp-fl" style="margin:0">Statut</span>
+      <button class="dp-st-opt ${s==='À faire'?'s-todo':''}" onclick="setStatus('${id}','À faire');openDetail(curDetail.obj,curDetail.kr,curDetail.ai)">À faire</button>
+      <button class="dp-st-opt ${s==='En cours'?'s-prog':''}" onclick="setStatus('${id}','En cours');openDetail(curDetail.obj,curDetail.kr,curDetail.ai)">En cours</button>
+      <button class="dp-st-opt ${s==='Terminé'?'s-done':''}" onclick="setStatus('${id}','Terminé');openDetail(curDetail.obj,curDetail.kr,curDetail.ai)">✓ Terminé</button>
+    </div>
+    <div class="dp-div"></div>
+    <div class="dp-field"><div class="dp-fl">Objectif opérationnel</div><div class="dp-fv" style="font-weight:600;color:${obj.color}">${obj.objOp}</div></div>
+    <div class="dp-field"><div class="dp-fl">KR opérationnel</div><div class="dp-fv">${kr.krOp}</div></div>
+    <div class="dp-field"><div class="dp-fl">KPI lié</div><div class="dp-fv mono">${kr.kpiOp}</div></div>
+    <div class="dp-div"></div>
+    <div class="dp-field"><div class="dp-fl">Source stratégique</div><div class="dp-fv" style="color:var(--ink3)">${obj.objS}</div></div>
+    <div class="dp-field"><div class="dp-fl">KR stratégique</div><div class="dp-fv" style="color:var(--ink3)">${kr.krS}</div></div>
+    <div class="dp-div"></div>
+    <div class="dp-field"><div class="dp-fl">Livrable attendu</div><div class="dp-fv">${act.l}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="dp-field"><div class="dp-fl">Owner</div><div class="dp-fv"><span class="ot">👤 ${act.o}</span></div></div>
+      <div class="dp-field"><div class="dp-fl">Trimestre</div><div class="dp-fv"><span class="tt ${act.t}">${act.t}</span></div></div>
+      <div class="dp-field"><div class="dp-fl">Priorité</div><div class="dp-fv"><span class="pt ${act.p==='Critique'?'p-crit':act.p==='Haute'?'p-high':'p-med'}">${act.p}</span></div></div>
+    </div>
+    <div class="dp-field"><div class="dp-fl">Deadline</div><div class="dp-fv mono">${act.d}</div></div>
+    ${act.c?`<div class="dp-div"></div><div class="dp-field"><div class="dp-fl">Commentaire</div><div class="dp-fv" style="font-style:italic;color:var(--ink3)">${act.c}</div></div>`:''}`;
+
+  document.getElementById('dp').classList.add('open');
+}
+
+function closeDetail(){
+  document.getElementById('dp').classList.remove('open');
+  curDetail=null;
+}
+
+// ════════════════════════════════════════════
+// FILTERS
+// ════════════════════════════════════════════
+const AF={trim:'all',status:null,prio:null,obj:null,hier:null};
+
+function filterTable(type,val,btn){
+  if(type==='trim'){ AF.trim=val; AF.obj=null; AF.hier=null;
+    document.querySelectorAll('.tbar .fc').forEach(p=>{ if(['Tous','T1','T2','T3','T4'].includes(p.textContent.trim())) p.classList.remove('on'); });
+    if(btn) btn.classList.add('on'); else { const b=document.querySelector(`.tbar .fc.on`); }
+  } else if(type==='status'){ AF.status=AF.status===val?null:val; if(btn) btn.classList.toggle('on',AF.status===val); }
+  else if(type==='prio'){ AF.prio=AF.prio===val?null:val; if(btn) btn.classList.toggle('on',AF.prio===val); }
+  else if(type==='obj'){ AF.obj=AF.obj===val?null:val; AF.hier=null; AF.trim='all';
+    document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+    if(AF.obj) document.getElementById('sb-'+AF.obj)?.classList.add('active');
+  }
+  else if(type==='hier'){ AF.hier=val; AF.obj=null; AF.trim='all'; }
+
+  let v=0;
+  document.querySelectorAll('#tb tr:not(.gr)').forEach(tr=>{
+    const show=(AF.trim==='all'||tr.dataset.trim===AF.trim)&&
+               (!AF.status||tr.dataset.status===AF.status)&&
+               (!AF.prio||tr.dataset.prio===AF.prio)&&
+               (!AF.obj||tr.dataset.obj===AF.obj)&&
+               (!AF.hier||tr.dataset.hier===AF.hier);
+    tr.style.display=show?'':'none';
+    if(show)v++;
+  });
+  document.querySelectorAll('#tb tr.gr').forEach(tr=>{
+    const hasVisible=tr.dataset.obj&&[...document.querySelectorAll(`#tb tr[data-obj="${tr.dataset.obj}"]:not(.gr)`)].some(r=>r.style.display!=='none');
+    tr.style.display=(AF.obj&&tr.dataset.obj!==AF.obj)||(AF.hier&&tr.dataset.hier!==AF.hier)?'none':hasVisible||(!AF.obj&&!AF.hier)?'':'none';
+  });
+  document.getElementById('row-count').textContent=`${v} actions`;
+
+  if(type==='obj'&&AF.obj) showView('table',null);
+}
+
+function globalSearch(q){
+  if(!q){ document.querySelectorAll('#tb tr:not(.gr)').forEach(tr=>tr.style.display=''); updateRowCount(); return; }
+  let v=0;
+  document.querySelectorAll('#tb tr:not(.gr)').forEach(tr=>{
+    const show=tr.dataset.search?.includes(q.toLowerCase());
+    tr.style.display=show?'':'none';
+    if(show)v++;
+  });
+  document.getElementById('row-count').textContent=`${v} résultats`;
+}
+
+function updateRowCount(){
+  const v=document.querySelectorAll('#tb tr:not(.gr):not([style*="none"])').length;
+  document.getElementById('row-count').textContent=`${v} actions`;
+}
+
+// ════════════════════════════════════════════
+// VIEW SWITCH
+// ════════════════════════════════════════════
+function showView(name,btn){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('act'));
+  document.getElementById('v-'+name)?.classList.add('act');
+  document.querySelectorAll('.vs-btn,.rail-btn[data-view]').forEach(b=>{
+    const match=b.getAttribute('onclick')?.includes(name)||b.dataset.view===name;
+    b.classList.toggle('act',match);
+  });
+}
+
+// ════════════════════════════════════════════
+// EXPORT CSV
+// ════════════════════════════════════════════
+function exportCSV(){
+  const rows=[['SERVICE','RESPONSABLE','DATE DE REMISE','Objectif Stratégique','KR Stratégique','KPI Stratégique','Objectif Opérationnel','KR Opérationnel','KPI Opérationnel','Action','Livrable','Owner','Trimestre','Deadline','Statut','Priorité','Commentaire']];
+  OBJS.forEach(obj=>obj.krs.forEach(kr=>kr.actions.forEach((act,ai)=>{
+    const id=aid(obj.badge,kr.krOp,ai);
+    rows.push(['Marketing','CGO',new Date().toLocaleDateString('fr'),obj.objS,kr.krS,kr.kpiS,obj.objOp,kr.krOp,kr.kpiOp,act.a,act.l,act.o,act.t,act.d,statuses[id]||act.s,act.p,act.c||'']);
+  })));
+  const csv=rows.map(r=>r.map(c=>'"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='Archipel_Marketing_Roadmap_RPO_2026.csv';
+  a.click();
+  toast('📥 Export CSV téléchargé — Format RPO complet');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  initStatuses();
+  buildSidebar();
+  buildDash();
+  buildGantt();
+  buildTable();
+});
+</script>
+</body>
+</html>
